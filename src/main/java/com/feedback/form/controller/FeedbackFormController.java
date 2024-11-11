@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.feedback.form.model.FeedbackForm;
@@ -25,8 +24,8 @@ public class FeedbackFormController {
 	@Autowired
 	private FeedbackFormService feedbackFormService;
 	
-	@PostMapping("/new")
-	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @RequestParam Long siteId){
+	@PostMapping("/new/{siteId}")
+	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId){
 		FeedbackForm newFeedback = feedbackFormService.addFeedbackForm(form, siteId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(newFeedback);
 	}
