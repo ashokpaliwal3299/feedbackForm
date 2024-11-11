@@ -24,6 +24,7 @@ public class ClientSiteMaster {
 	
 	private String clientName;
 	private String siteName;
+	private String inchargeName;
 	
 	@Email
 	private String email;
