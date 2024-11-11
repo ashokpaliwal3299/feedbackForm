@@ -10,7 +10,6 @@ import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.model.FeedbackForm;
 import com.feedback.form.repository.FeedbackFormRepository;
 
-
 @Service
 public class FeedbackFormService {
 
@@ -18,7 +17,196 @@ public class FeedbackFormService {
 	private FeedbackFormRepository fedbackRepo;
 
 	public FeedbackForm addFeedbackForm(FeedbackForm form) {
-		
+		if (form.getCleaning1() == 0) {
+			form.setCleaningOutOf1(0);
+		} else {
+			form.setCleaningOutOf1(5);
+		}
+
+		if (form.getCleaning2() == 0) {
+			form.setCleaningOutOf2(0);
+		} else {
+			form.setCleaningOutOf2(5);
+		}
+
+		if (form.getCleaning3() == 0) {
+			form.setCleaningOutOf3(0);
+		} else {
+			form.setCleaningOutOf3(5);
+		}
+
+		if (form.getCleaning4() == 0) {
+			form.setCleaningOutOf4(0);
+		} else {
+			form.setCleaningOutOf4(5);
+		}
+
+		if (form.getCleaning5() == 0) {
+			form.setCleaningOutOf5(0);
+		} else {
+			form.setCleaningOutOf5(5);
+		}
+
+		// ******************************
+		if (form.getControls1() == 0) {
+			form.setControlsOutOf1(0);
+		} else {
+			form.setControlsOutOf1(5);
+		}
+
+		if (form.getControls2() == 0) {
+			form.setControlsOutOf2(0);
+		} else {
+			form.setControlsOutOf2(5);
+		}
+
+		if (form.getControls3() == 0) {
+			form.setControlsOutOf3(0);
+		} else {
+			form.setControlsOutOf3(5);
+		}
+
+		if (form.getControls4() == 0) {
+			form.setControlsOutOf4(0);
+		} else {
+			form.setControlsOutOf4(5);
+		}
+
+		if (form.getControls5() == 0) {
+			form.setControlsOutOf5(0);
+		} else {
+			form.setControlsOutOf5(5);
+		}
+
+		// *******************************
+		if (form.getHo1() == 0) {
+			form.setHoOutOf1(0);
+		} else {
+			form.setHoOutOf1(5);
+		}
+
+		if (form.getHo2() == 0) {
+			form.setHoOutOf2(0);
+		} else {
+			form.setHoOutOf2(5);
+		}
+
+		if (form.getHo3() == 0) {
+			form.setHoOutOf3(0);
+		} else {
+			form.setHoOutOf3(5);
+		}
+
+		if (form.getHo4() == 0) {
+			form.setHoOutOf4(0);
+		} else {
+			form.setHoOutOf4(5);
+		}
+
+		if (form.getHo5() == 0) {
+			form.setHoOutOf5(0);
+		} else {
+			form.setHoOutOf5(5);
+		}
+
+		// *****************
+		if (form.getPersonal1() == 0) {
+			form.setPersonalOutOf1(0);
+		} else {
+			form.setPersonalOutOf1(5);
+			;
+		}
+
+		if (form.getPersonal2() == 0) {
+			form.setPersonalOutOf2(0);
+		} else {
+			form.setPersonalOutOf2(5);
+			;
+		}
+
+		if (form.getPersonal3() == 0) {
+			form.setPersonalOutOf3(0);
+		} else {
+			form.setPersonalOutOf3(5);
+			;
+		}
+
+		if (form.getPersonal4() == 0) {
+			form.setPersonalOutOf4(0);
+		} else {
+			form.setPersonalOutOf4(5);
+			;
+		}
+
+		if (form.getPersonal5() == 0) {
+			form.setPersonalOutOf5(0);
+		} else {
+			form.setPersonalOutOf5(5);
+			;
+		}
+
+		// ******************************
+		if (form.getPurchase1() == 0) {
+			form.setPurchaseOutOf1(0);
+		} else {
+			form.setPurchaseOutOf1(5);
+		}
+
+		if (form.getPurchase2() == 0) {
+			form.setPurchaseOutOf2(0);
+		} else {
+			form.setPurchaseOutOf2(5);
+		}
+
+		if (form.getPurchase3() == 0) {
+			form.setPurchaseOutOf3(0);
+		} else {
+			form.setPurchaseOutOf3(5);
+		}
+
+		if (form.getPurchase4() == 0) {
+			form.setPurchaseOutOf4(0);
+		} else {
+			form.setPurchaseOutOf4(5);
+		}
+
+		if (form.getPurchase5() == 0) {
+			form.setPurchaseOutOf5(0);
+		} else {
+			form.setPurchaseOutOf5(5);
+		}
+
+		// ********************************
+		if (form.getSupervision1() == 0) {
+			form.setSupervisionOutOf1(0);
+		} else {
+			form.setSupervisionOutOf1(5);
+		}
+
+		if (form.getSupervision2() == 0) {
+			form.setSupervisionOutOf2(0);
+		} else {
+			form.setSupervisionOutOf2(5);
+		}
+
+		if (form.getSupervision3() == 0) {
+			form.setSupervisionOutOf3(0);
+		} else {
+			form.setSupervisionOutOf3(5);
+		}
+
+		if (form.getSupervision4() == 0) {
+			form.setSupervisionOutOf4(0);
+		} else {
+			form.setSupervisionOutOf4(5);
+		}
+
+		if (form.getSupervision5() == 0) {
+			form.setSupervisionOutOf5(0);
+		} else {
+			form.setSupervisionOutOf5(5);
+		}
+
 		return fedbackRepo.save(form);
 	}
 
