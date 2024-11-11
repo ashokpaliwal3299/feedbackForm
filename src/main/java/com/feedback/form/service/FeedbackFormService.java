@@ -16,7 +16,7 @@ public class FeedbackFormService {
 	@Autowired
 	private FeedbackFormRepository fedbackRepo;
 
-	public FeedbackForm addFeedbackForm(FeedbackForm form) {
+	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) {
 		if (form.getCleaning1() == 0) {
 			form.setCleaningOutOf1(0);
 		} else {
@@ -207,6 +207,7 @@ public class FeedbackFormService {
 			form.setSupervisionOutOf5(5);
 		}
 
+		form.setSiteId(siteId);
 		return fedbackRepo.save(form);
 	}
 

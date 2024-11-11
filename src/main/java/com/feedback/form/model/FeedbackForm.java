@@ -6,8 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
@@ -27,9 +25,7 @@ public class FeedbackForm {
 	private Long id;
 	private boolean isDeleted = false;
 	
-	@ManyToOne
-	@JoinColumn(name = "site_id")
-	private ClientSiteMaster siteId; 
+	private Long siteId; 
 	
 	private int personal1;
 	private int personalOutOf1;
