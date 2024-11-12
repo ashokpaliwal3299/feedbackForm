@@ -1,14 +1,34 @@
 package com.feedback.form.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.feedback.form.Exception.RecordNotFoundException;
+import com.feedback.form.Utils.ExcelUtils;
+import com.feedback.form.model.ClientSiteMaster;
 import com.feedback.form.model.FeedbackForm;
+import com.feedback.form.repository.ClientSiteMasterRepository;
 import com.feedback.form.repository.FeedbackFormRepository;
+
+import jakarta.mail.MessagingException;
 
 @Service
 public class FeedbackFormService {
@@ -16,7 +36,13 @@ public class FeedbackFormService {
 	@Autowired
 	private FeedbackFormRepository fedbackRepo;
 
-	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) {
+	@Autowired
+	private ClientSiteMasterRepository siteRepo;
+	
+	@Autowired
+	private EmailService emailService;
+
+	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) throws IOException, MessagingException {
 		if (form.getCleaning1() == 0) {
 			form.setCleaningOutOf1(0);
 		} else {
@@ -208,7 +234,23 @@ public class FeedbackFormService {
 		}
 
 		form.setSiteId(siteId);
-		return fedbackRepo.save(form);
+		System.out.println("form start ti saving");
+		FeedbackForm savedForm = fedbackRepo.save(form);
+		System.out.println("form saved");
+		Optional<ClientSiteMaster> siteMaster = siteRepo.findByIdAndIsDeletedFalse(siteId);
+		System.out.println("is present "+ siteMaster.isPresent() + " id is " + siteId);
+		if(siteMaster.isPresent()) {
+			System.out.println("email present");
+			String inschargeEmail = siteMaster.get().getEmail();
+			System.out.println("email is = " + inschargeEmail);
+			
+			byte[] file = excelExportOfInspectionForm(savedForm.getId());
+			
+			emailService.sendReportToSiteIncharge(inschargeEmail, file);
+		}
+		
+		
+		return savedForm;
 	}
 
 	public Optional<FeedbackForm> getFeedbackFormById(Long id) {
@@ -235,296 +277,343 @@ public class FeedbackFormService {
 		return "Feedback form is deleted succesfully";
 	}
 
+	private void applyBorders(XSSFRow row, int startColumn, int endColumn, XSSFCellStyle borderStyle) {
+		for (int col = startColumn; col <= endColumn; col++) {
+			XSSFCell cell = row.createCell(col);
+			cell.setCellStyle(borderStyle);
+		}
+	}
+
 	// EXCEL CODE ---------------------------->
-//	public byte[] excelExportOfInspectionForm(Long id) throws IOException {
-//		// Fetch the InspectionForm from the repository
-//		Optional<FeedbackForm> optionalFeedbackForm = fedbackRepo.findByIdAndIsDeletedFalse(id);
-//
-//		if (optionalFeedbackForm.isPresent()) {
-//			FeedbackForm feedbackForm = optionalFeedbackForm.get();
-//
-//			XSSFWorkbook workbook = new XSSFWorkbook();
-//			XSSFSheet sheet = workbook.createSheet("Feedback Form");
-//			sheet.setDisplayGridlines(false);
-//
-//			String[] headers = { "SECTION", "ITEM CHECKED", "OK", "NOT OK", "MINIMUM ACCEPTABLE STANDARD", "REMARKS",
-//					"PHOTO ID" };
-//			// XSSFCellStyle headerCellStyle = createHeaderCellStyle(workbook,
-//			// IndexedColors.GREY_25_PERCENT);
-//
-//			// Create the border cell style
-//			XSSFCellStyle companyborderStyle = createCompanyBorderCellStyle(workbook);
-//			XSSFCellStyle borderStyle = createBorderCellStyle(workbook);
-//
-//			// Create the company name row
-//			XSSFRow companyNameRow = sheet.createRow(0);
-//			createAndStyleCells(companyNameRow, 0, headers.length - 1, feedbackForm.getCleaning1() + " - FEEDBACK FORM",
-//					companyborderStyle);
-//			sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.length - 1));
-//			companyNameRow.setHeightInPoints(30);
-//
+	@Async
+	public byte[] excelExportOfInspectionForm(Long id) throws IOException {
+		System.out.println("report making");
+		
+		// Fetch the InspectionForm from the repository
+		Optional<FeedbackForm> optionalFeedbackForm = fedbackRepo.findByIdAndIsDeletedFalse(id);
+
+		if (optionalFeedbackForm.isPresent()) {
+			FeedbackForm feedbackForm = optionalFeedbackForm.get();
+
+			Optional<ClientSiteMaster> optionalSite = siteRepo.findByIdAndIsDeletedFalse(feedbackForm.getSiteId());
+
+			if (!optionalSite.isPresent()) {
+				throw new RecordNotFoundException("Site with id : " + feedbackForm.getSiteId() + " not found.");
+			}
+
+			ClientSiteMaster siteMaster = optionalSite.get();
+
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet sheet = workbook.createSheet("Feedback Form");
+			sheet.setDisplayGridlines(false);
+
+			String[] headers = { "SECTION", "PARTICULAR", "POINTS EARNS", "OUT OF" };
+			// XSSFCellStyle headerCellStyle = createHeaderCellStyle(workbook,
+			// IndexedColors.GREY_25_PERCENT);
+
+			// Create the border cell style
+			XSSFCellStyle companyborderStyle = createCompanyBorderCellStyle(workbook);
+			XSSFCellStyle borderStyle = createBorderCellStyle(workbook);
+
+			// Create the company name row
+			XSSFRow companyNameRow = sheet.createRow(0);
+			createAndStyleCells(companyNameRow, 0, headers.length - 1, "FEEDBACK FORM", companyborderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.length - 1));
+			companyNameRow.setHeightInPoints(30);
+
 //			// Create a cell style
-//			XSSFCellStyle style = ExcelUtils.createCellStyle(workbook, (short) 12, // Font size
-//					HorizontalAlignment.LEFT, // Horizontal alignment for BRAND
-//					VerticalAlignment.CENTER, // Vertical alignment
-//					BorderStyle.THIN // Border style
-//			);
-//
-//			XSSFCellStyle dateStyle = ExcelUtils.createCellStyle(workbook, (short) 12, // Font size
-//					HorizontalAlignment.RIGHT, // Horizontal alignment for DATE
-//					VerticalAlignment.CENTER, // Vertical alignment
-//					BorderStyle.THIN // Border style
-//			);
-//
-//			// Create the store name row
-//			XSSFRow storeNameRow = sheet.createRow(1);
-//
-//			// Create the cells
-//			XSSFCell brandCell = storeNameRow.createCell(0);
-//			brandCell.setCellValue("Brand: ");
-//			brandCell.setCellStyle(style);
-//
-//			XSSFCell dateCell = storeNameRow.createCell(3); // Adjust column index as needed
-//			dateCell.setCellValue("Date: "); // Example
-//			dateCell.setCellStyle(dateStyle);
-//
-//			// Merge cells to ensure proper alignment
-//			sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2)); // Merges cells for BRAND
-//			sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, headers.length - 1)); // Merges cells for DATE
-//
-//			// Apply the border style to all cells in the merged range
-//			for (int col = 0; col <= 2; col++) {
-//				XSSFCell cell = storeNameRow.getCell(col);
-//				if (cell == null) {
-//					cell = storeNameRow.createCell(col);
-//				}
-//				cell.setCellStyle(borderStyle);
-//			}
-//
-//			for (int col = 3; col <= headers.length - 1; col++) {
-//				XSSFCell cell = storeNameRow.getCell(col);
-//				if (cell == null) {
-//					cell = storeNameRow.createCell(col);
-//				}
-//				cell.setCellStyle(borderStyle);
-//			}
-//
-//			// Create the location row
-//			XSSFRow locationRow = sheet.createRow(2);
-//			// Create the cells
-//			XSSFCell locationCell = locationRow.createCell(0);
-//			locationCell.setCellValue("Store Location: ");
-//			locationCell.setCellStyle(style);
-//
-//			XSSFCell technicianNameCell = locationRow.createCell(3);
-//			technicianNameCell.setCellValue("Technician Name: ");
-//			technicianNameCell.setCellStyle(dateStyle);
-//
-//			// Merge cells to ensure proper alignment
-//			sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 2)); // Merges cells for BRAND
-//			sheet.addMergedRegion(new CellRangeAddress(2, 2, 3, headers.length - 1)); // Merges cells for DATE
-//
-//			// Apply the border style to all cells in the merged range
-//			for (int col = 0; col <= 2; col++) {
-//				XSSFCell cell = locationRow.getCell(col);
-//				if (cell == null) {
-//					cell = locationRow.createCell(col);
-//				}
-//				cell.setCellStyle(borderStyle);
-//			}
-//
-//			for (int col = 3; col <= headers.length - 1; col++) {
-//				XSSFCell cell = locationRow.getCell(col);
-//				if (cell == null) {
-//					cell = locationRow.createCell(col);
-//				}
-//				cell.setCellStyle(borderStyle);
-//			}
-//
-//			XSSFCellStyle headerCellStyle = createHeaderCellStyle(workbook);
-//			XSSFCellStyle borderCellStyle = createBorderCellStyle(workbook);
-//
-//			// Create the company name row
-//			XSSFRow descriptionRow = sheet.createRow(3);
-//			createAndStyleCells(descriptionRow, 0, headers.length - 1, "Description", companyborderStyle);
-//			sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, headers.length - 1));
-//
-//			// Header Row
-//			XSSFRow headerRow = sheet.createRow(4);
-//			for (int i = 0; i < headers.length; i++) {
-//				XSSFCell cell = headerRow.createCell(i);
-//				cell.setCellValue(headers[i]);
-//				cell.setCellStyle(headerCellStyle);
-//				cell.setCellStyle(borderCellStyle);
-//			}
-//
-//			// Fill the inspection form data
-//			int currentRow = 5;
-//			String[][] inspectionData = { { "A", "Personal", "Points Earned", "Out of" },
-//					{ "1", "Staff courtesy and presentation", String.valueOf(feedbackForm.getPersonal1()),
-//							String.valueOf(feedbackForm.getPersonalOutOf()) },
-//					{ "2", "Staff Personnel Hygiene", String.valueOf(feedbackForm.getPersonal2()),
-//							String.valueOf(feedbackForm.getPersonalOutOf()) },
-//					{ "3", "Uniforms, Shoes, Caps", String.valueOf(feedbackForm.getPersonal3()),
-//							String.valueOf(feedbackForm.getPersonalOutOf()) },
-//					{ "4", "Staff Turnover, Absenteeism, Late Coming", String.valueOf(feedbackForm.getPersonal4()),
-//							String.valueOf(feedbackForm.getPersonalOutOf()) },
-//					{ "5", "Staff knowledge and responsiveness", String.valueOf(feedbackForm.getPersonal5()),
-//							String.valueOf(feedbackForm.getPersonalOutOf()) },
-//
-//					{ "", "", "", "" }, { "B", "Cleaning & Hygiene", "", "" },
-//					{ "1", "Cleaning of premises", String.valueOf(feedbackForm.getCleaning1()),
-//							String.valueOf(feedbackForm.getCleaningOutOf()) },
-//					{ "2", "Cleaning of Toilets", String.valueOf(feedbackForm.getCleaning2()),
-//							String.valueOf(feedbackForm.getCleaningOutOf()) },
-//					{ "3", "Juditious use of House keeping material ", String.valueOf(feedbackForm.getCleaning3()),
-//							String.valueOf(feedbackForm.getCleaningOutOf()) },
-//					{ "4", "Documentation of tasks (todo & completed)", String.valueOf(feedbackForm.getCleaning4()),
-//							String.valueOf(feedbackForm.getCleaningOutOf()) },
-//					{ "5", "Suitable Garbage Disposable Measures", String.valueOf(feedbackForm.getCleaning5()),
-//							String.valueOf(feedbackForm.getCleaningOutOf()) },
-//
-//					{ "", "", "", "" }, { "C.", "Site Supervision", "", "" },
-//					{ "1.", "Supervision Standards", String.valueOf(feedbackForm.getSupervision1()),
-//							String.valueOf(feedbackForm.getSupervisionOutOf()) },
-//					{ "2.", "Job Knowledge", String.valueOf(feedbackForm.getSupervision2()),
-//							String.valueOf(feedbackForm.getSupervisionOutOf()) },
-//					{ "3.", "Speed, Efficiency, Work quality of site incharge",
-//							String.valueOf(feedbackForm.getSupervision3()),
-//							String.valueOf(feedbackForm.getSupervisionOutOf()) },
-//					{ "4.", "Responsiveness To Customer Needs", String.valueOf(feedbackForm.getSupervision4()),
-//							String.valueOf(feedbackForm.getSupervisionOutOf()) },
-//					{ "5.", "End User Feedback", String.valueOf(feedbackForm.getSupervision5()),
-//							String.valueOf(feedbackForm.getSupervisionOutOf()) },
-//
-//					{ "", "", "", "" }, { "D.", "Purshase & Stores", "", "" },
-//					{ "1.", "Quality of Raw Material",
-//						    String.valueOf(feedbackForm.getPurchase1()),
-//							String.valueOf(feedbackForm.getPurchaseOutOf()) },
-//					{ "2.", "Level of Stocking", 
-//							String.valueOf(feedbackForm.getPurchase2()),
-//							String.valueOf(feedbackForm.getPurchaseOutOf()) },
-//					{ "3.", "Bin Card, Daily Indent System Being Followed", String.valueOf(feedbackForm.getPurchase3()),
-//							String.valueOf(feedbackForm.getPurchaseOutOf()) },
-//					{ "4.", "Purchase Specifications Being Followed", String.valueOf(feedbackForm.getPurchase4()),
-//								String.valueOf(feedbackForm.getPurchaseOutOf())},
-//					{ "5.", "Quality of Material Supplied", String.valueOf(feedbackForm.getPurchase5()),
-//									String.valueOf(feedbackForm.getPurchaseOutOf()) },
-//					
-//					{ "", "", "", "" }, 
-//					{ "E.", "Controls", "", ""},
-//					{ "1.", "Appropriate documentation and Billing",
-//						String.valueOf(feedbackForm.getControls1()),
-//						String.valueOf(feedbackForm.getControlsOutOf()) },
-//					{ "2.", "Attendance and other relevant documents submitted on time ", String.valueOf(feedbackForm.getControls2()),
-//							String.valueOf(feedbackForm.getControlsOutOf()) },
-//					{ "3.", "Regular trainings held (on site / off site)", String.valueOf(feedbackForm.getControls3()),
-//								String.valueOf(feedbackForm.getControlsOutOf())  },
-//					{ "4", "Recommendation on preventive maintenance ",String.valueOf(feedbackForm.getControls4()),
-//									String.valueOf(feedbackForm.getControlsOutOf())},
-//					{ "5", "Timely receipt of materials",String.valueOf(feedbackForm.getControls5()),
-//										String.valueOf(feedbackForm.getControlsOutOf())},
-//					{ "", "", "", "" }, 
-//					{ "F.", "HO and Team Managers", "", "" },
-//					{ "1.", "Management team in regular contact",
-//						String.valueOf(feedbackForm.getHo1()),
-//						String.valueOf(feedbackForm.getHoOutOf()) },
-//					{ "2.", "Supervision and Knowldege ",
-//							String.valueOf(feedbackForm.getHo2()),
-//							String.valueOf(feedbackForm.getHoOutOf()) },
-//					{ "3.", "Responsiveness to Client's Needs",
-//								String.valueOf(feedbackForm.getHo3()),
-//								String.valueOf(feedbackForm.getHoOutOf()) },
-//					{ "4.", "Recommendation on new technology",
-//									String.valueOf(feedbackForm.getHo4()),
-//									String.valueOf(feedbackForm.getHoOutOf()) },
-//					{ "5.", "Provide timely documentation and information ",
-//										String.valueOf(feedbackForm.getHo5()),
-//										String.valueOf(feedbackForm.getHoOutOf()) }
-//					};
-//
-//			// Create data rows
-//			for (String[] rowData : inspectionData) {
-//				XSSFRow row = sheet.createRow(currentRow++);
-//				for (int i = 0; i < rowData.length; i++) {
-//					XSSFCell cell = row.createCell(i);
-//					cell.setCellValue(rowData[i]);
-//					cell.setCellStyle(borderCellStyle);
-//				}
-//			}
-//
-//			// Adjust column widths
-//			for (int i = 0; i < headers.length; i++) {
-//				sheet.autoSizeColumn(i);
-//			}
-//
-//			// Write the workbook to a byte array output stream
-//			try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-//				workbook.write(outputStream);
-//				return outputStream.toByteArray();
-//			}
-//		}
-//		throw new RecordNotFoundException("Inspection Form not found with id: " + id);
-//
-//	}
-//
-//	// Method to create a border cell style
-//	private XSSFCellStyle createBorderCellStyle(XSSFWorkbook workbook) {
-//		XSSFCellStyle style = workbook.createCellStyle();
-//		// Create a font and set it to bold
-//		XSSFFont font = workbook.createFont();
-//		font.setBold(true);
-//		style.setFont(font);
-//
-//		style.setBorderTop(BorderStyle.THIN);
-//		style.setBorderBottom(BorderStyle.THIN);
-//		style.setBorderLeft(BorderStyle.THIN);
-//		style.setBorderRight(BorderStyle.THIN);
-//
-//		return style;
-//	}
-//
-//	// company name style
-//	// Create a font object and set its size
-//	private XSSFCellStyle createCompanyBorderCellStyle(XSSFWorkbook workbook) {
-//		XSSFFont font = workbook.createFont();
-//		font.setFontHeightInPoints((short) 14); // Font size 14
-//
-//		// Create a cell style object
-//		XSSFCellStyle style = workbook.createCellStyle();
-//		style.setFont(font);
-//		style.setAlignment(HorizontalAlignment.CENTER); // Center-align text
-//		style.setVerticalAlignment(VerticalAlignment.CENTER); // Center-align text vertically
-//		style.setBorderTop(BorderStyle.THIN);
-//		style.setBorderBottom(BorderStyle.THIN);
-//		style.setBorderLeft(BorderStyle.THIN);
-//		style.setBorderRight(BorderStyle.THIN);
-//		return style;
-//	}
-//
-//	private XSSFCellStyle createHeaderCellStyle(XSSFWorkbook workbook) {
-//
-//		XSSFCellStyle style = workbook.createCellStyle();
-//		style.setFillBackgroundColor(IndexedColors.YELLOW.getIndex());
-//		// style.setFillForegroundColor(IndexedColors.YELLOW.getIndex()); // Set
-//		// background color to yellow
-//		style.setFillPattern(FillPatternType.SOLID_FOREGROUND); // Fill the cell with the foreground color
-//		style.setAlignment(HorizontalAlignment.CENTER); // Center align the text
-//		style.setVerticalAlignment(VerticalAlignment.CENTER); // Center align vertically
-//		style.setBorderBottom(BorderStyle.THIN);
-//		style.setBorderLeft(BorderStyle.THIN);
-//		style.setBorderRight(BorderStyle.THIN);
-//		style.setBorderTop(BorderStyle.THIN);
-//
-//		return style;
-//	}
-//
-//	private static void createAndStyleCells(XSSFRow row, int startCol, int endCol, String value, XSSFCellStyle style) {
-//		for (int i = startCol; i <= endCol; i++) {
-//			XSSFCell cell = row.createCell(i);
-//			cell.setCellValue(value);
-//			cell.setCellStyle(style);
-//		}
-//	}
+			XSSFCellStyle style = ExcelUtils.createCellStyle(workbook, (short) 12, // Font size
+					HorizontalAlignment.LEFT, // Horizontal alignment for BRAND
+					VerticalAlignment.CENTER, // Vertical alignment
+					BorderStyle.THIN // Border style
+			);
+
+			// Create the store name row
+			XSSFRow storeNameRow = sheet.createRow(1);
+			XSSFCell brandCell = storeNameRow.createCell(0);
+			brandCell.setCellValue("Client: ");
+			brandCell.setCellStyle(style);
+
+			XSSFCell clientValueCell = storeNameRow.createCell(1);
+			clientValueCell.setCellValue(siteMaster.getClientName()); // Replace with actual client name value
+			clientValueCell.setCellStyle(style);
+
+			// Apply borders from column 2 to the last column of this row
+			applyBorders(storeNameRow, 2, headers.length - 1, borderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(1, 1, 1, headers.length - 1));
+
+			// Create the site name row
+			XSSFRow siteNameRow = sheet.createRow(2);
+			XSSFCell siteLabelCell = siteNameRow.createCell(0);
+			siteLabelCell.setCellValue("Site: ");
+			siteLabelCell.setCellStyle(style);
+
+			XSSFCell siteValueCell = siteNameRow.createCell(1);
+			siteValueCell.setCellValue(siteMaster.getSiteName()); // Replace with actual site name
+			siteValueCell.setCellStyle(style);
+
+			// Apply borders from column 2 to the last column of this row
+			applyBorders(siteNameRow, 2, headers.length - 1, borderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(2, 2, 1, headers.length - 1));
+
+			// Create the site in-charge name row
+			XSSFRow inchargeNameRow = sheet.createRow(3);
+			XSSFCell inchargeLabelCell = inchargeNameRow.createCell(0);
+			inchargeLabelCell.setCellValue("Site Incharge Name: ");
+			inchargeLabelCell.setCellStyle(style);
+
+			XSSFCell inchargeValueCell = inchargeNameRow.createCell(1);
+			inchargeValueCell.setCellValue(siteMaster.getInchargeName()); // Replace with actual in-charge name
+			inchargeValueCell.setCellStyle(style);
+
+			// Apply borders from column 2 to the last column of this row
+			applyBorders(inchargeNameRow, 2, headers.length - 1, borderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(3, 3, 1, headers.length - 1));
+
+			// Create the filled-on date-time row
+			XSSFRow dateTimeRow = sheet.createRow(4);
+			XSSFCell dateTimeLabelCell = dateTimeRow.createCell(0);
+			dateTimeLabelCell.setCellValue("Filled On Date-time: ");
+			dateTimeLabelCell.setCellStyle(style);
+
+			XSSFCell dateTimeValueCell = dateTimeRow.createCell(1);
+			dateTimeValueCell.setCellValue(ExcelUtils.formatTimeStamp(feedbackForm.getCreatedAt())); // Replace with
+																										// actual filled
+																										// date and time
+			dateTimeValueCell.setCellStyle(style);
+
+			// Apply borders from column 2 to the last column of this row
+			applyBorders(dateTimeRow, 2, headers.length - 1, borderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(4, 4, 1, headers.length - 1));
+
+			XSSFCellStyle headerCellStyle = createHeaderCellStyle(workbook);
+			XSSFCellStyle borderCellStyle = createBorderCellStyle(workbook);
+
+			// Create the company name row
+			XSSFRow descriptionRow = sheet.createRow(5);
+			createAndStyleCells(descriptionRow, 0, headers.length - 1, "Description", companyborderStyle);
+			sheet.addMergedRegion(new CellRangeAddress(5, 5, 0, headers.length - 1));
+
+			// Header Row
+			XSSFRow headerRow = sheet.createRow(6);
+			for (int i = 0; i < headers.length; i++) {
+				XSSFCell cell = headerRow.createCell(i);
+				cell.setCellValue(headers[i]);
+				cell.setCellStyle(headerCellStyle);
+				cell.setCellStyle(borderCellStyle);
+			}
+
+			// Fill the inspection form data
+			int subTotal1 = feedbackForm.getPersonal1() + feedbackForm.getPersonal2() + feedbackForm.getPersonal3()
+					+ feedbackForm.getPersonal4() + feedbackForm.getPersonal5();
+
+			int outOfTotal1 = feedbackForm.getPersonalOutOf1() + feedbackForm.getPersonalOutOf2()
+					+ feedbackForm.getPersonalOutOf3() + feedbackForm.getPersonalOutOf4()
+					+ feedbackForm.getPersonalOutOf5();
+
+			int subtotal2 = feedbackForm.getCleaning1() + feedbackForm.getCleaning2() + feedbackForm.getCleaning3()
+					+ feedbackForm.getCleaning4() + feedbackForm.getCleaning5();
+
+			int outOf2 = feedbackForm.getCleaningOutOf1() + feedbackForm.getCleaningOutOf2()
+					+ feedbackForm.getCleaningOutOf3() + feedbackForm.getCleaningOutOf4()
+					+ feedbackForm.getCleaningOutOf5();
+
+			int subtotal3 = feedbackForm.getSupervision1() + feedbackForm.getSupervision2()
+					+ feedbackForm.getCleaning3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
+
+			int outof3 = feedbackForm.getSupervisionOutOf1() + feedbackForm.getSupervisionOutOf2()
+					+ feedbackForm.getSupervisionOutOf3() + feedbackForm.getSupervisionOutOf4()
+					+ feedbackForm.getSupervisionOutOf5();
+
+			int subtotal4 = feedbackForm.getPurchase1() + feedbackForm.getPurchase2() + feedbackForm.getPurchase3()
+					+ feedbackForm.getPurchase4() + feedbackForm.getPurchase5();
+
+			int outof4 = feedbackForm.getPurchaseOutOf1() + feedbackForm.getPurchaseOutOf2()
+					+ feedbackForm.getPurchaseOutOf3() + feedbackForm.getPurchaseOutOf4()
+					+ feedbackForm.getPurchaseOutOf5();
+
+			int subtotal5 = feedbackForm.getControls1() + feedbackForm.getControls2() + feedbackForm.getControls3()
+					+ feedbackForm.getControls4() + feedbackForm.getControls5();
+
+			int outof5 = feedbackForm.getControlsOutOf1() + feedbackForm.getControlsOutOf2()
+					+ feedbackForm.getControlsOutOf3() + feedbackForm.getControlsOutOf4()
+					+ feedbackForm.getControlsOutOf5();
+
+			int subtotal6 = feedbackForm.getHo1() + feedbackForm.getHo2() + feedbackForm.getHo3()
+					+ feedbackForm.getHo4() + feedbackForm.getHo5();
+
+			int outof6 = feedbackForm.getHoOutOf1() + feedbackForm.getHoOutOf2() + feedbackForm.getHoOutOf3()
+					+ feedbackForm.getHoOutOf4() + feedbackForm.getHoOutOf5();
+
+			int totalEarn = subTotal1 + subtotal2 + subtotal3 + subtotal4 + subtotal5 + subtotal6;
+			int totalOutOf = outOfTotal1 + outOf2 + outof3 + outof4 + outof5 + outof6;
+
+			double percentage = ((double) totalEarn / totalOutOf) * 100;
+
+			int currentRow = 7;
+			String[][] inspectionData = { { "A", "Personal", "Points Earned", "Out of" },
+					{ "1", "Staff courtesy and presentation", String.valueOf(feedbackForm.getPersonal1()),
+							String.valueOf(feedbackForm.getPersonalOutOf1()) },
+					{ "2", "Staff Personnel Hygiene", String.valueOf(feedbackForm.getPersonal2()),
+							String.valueOf(feedbackForm.getPersonalOutOf2()) },
+					{ "3", "Uniforms, Shoes, Caps", String.valueOf(feedbackForm.getPersonal3()),
+							String.valueOf(feedbackForm.getPersonalOutOf3()) },
+					{ "4", "Staff Turnover, Absenteeism, Late Coming", String.valueOf(feedbackForm.getPersonal4()),
+							String.valueOf(feedbackForm.getPersonalOutOf4()) },
+					{ "5", "Staff knowledge and responsiveness", String.valueOf(feedbackForm.getPersonal5()),
+							String.valueOf(feedbackForm.getPersonalOutOf5()) },
+
+					{ "", "Sub Total", String.valueOf(subTotal1), String.valueOf(outOfTotal1) }, { "", "", "", "" },
+					{ "B", "Cleaning & Hygiene", "", "" },
+					{ "1", "Cleaning of premises", String.valueOf(feedbackForm.getCleaning1()),
+							String.valueOf(feedbackForm.getCleaningOutOf1()) },
+					{ "2", "Cleaning of Toilets", String.valueOf(feedbackForm.getCleaning2()),
+							String.valueOf(feedbackForm.getCleaningOutOf2()) },
+					{ "3", "Juditious use of House keeping material ", String.valueOf(feedbackForm.getCleaning3()),
+							String.valueOf(feedbackForm.getCleaningOutOf3()) },
+					{ "4", "Documentation of tasks (todo & completed)", String.valueOf(feedbackForm.getCleaning4()),
+							String.valueOf(feedbackForm.getCleaningOutOf4()) },
+					{ "5", "Suitable Garbage Disposable Measures", String.valueOf(feedbackForm.getCleaning5()),
+							String.valueOf(feedbackForm.getCleaningOutOf5()) },
+					{ "", "Sub Total", String.valueOf(subtotal2), String.valueOf(outOf2) },
+
+					{ "", "", "", "" }, { "C.", "Site Supervision", "", "" },
+					{ "1.", "Supervision Standards", String.valueOf(feedbackForm.getSupervision1()),
+							String.valueOf(feedbackForm.getSupervisionOutOf1()) },
+					{ "2.", "Job Knowledge", String.valueOf(feedbackForm.getSupervision2()),
+							String.valueOf(feedbackForm.getSupervisionOutOf2()) },
+					{ "3.", "Speed, Efficiency, Work quality of site incharge",
+							String.valueOf(feedbackForm.getSupervision3()),
+							String.valueOf(feedbackForm.getSupervisionOutOf3()) },
+					{ "4.", "Responsiveness To Customer Needs", String.valueOf(feedbackForm.getSupervision4()),
+							String.valueOf(feedbackForm.getSupervisionOutOf4()) },
+					{ "5.", "End User Feedback", String.valueOf(feedbackForm.getSupervision5()),
+							String.valueOf(feedbackForm.getSupervisionOutOf5()) },
+
+					{ "", "Sub Total", String.valueOf(subtotal3), String.valueOf(outof3) }, { "", "", "", "" },
+					{ "D.", "Purshase & Stores", "", "" },
+					{ "1.", "Quality of Raw Material", String.valueOf(feedbackForm.getPurchase1()),
+							String.valueOf(feedbackForm.getPurchaseOutOf1()) },
+					{ "2.", "Level of Stocking", String.valueOf(feedbackForm.getPurchase2()),
+							String.valueOf(feedbackForm.getPurchaseOutOf2()) },
+					{ "3.", "Bin Card, Daily Indent System Being Followed", String.valueOf(feedbackForm.getPurchase3()),
+							String.valueOf(feedbackForm.getPurchaseOutOf3()) },
+					{ "4.", "Purchase Specifications Being Followed", String.valueOf(feedbackForm.getPurchase4()),
+							String.valueOf(feedbackForm.getPurchaseOutOf4()) },
+					{ "5.", "Quality of Material Supplied", String.valueOf(feedbackForm.getPurchase5()),
+							String.valueOf(feedbackForm.getPurchaseOutOf5()) },
+
+					{ "", "Sub Total", String.valueOf(subtotal4), String.valueOf(outof4) }, { "", "", "", "" },
+					{ "E.", "Controls", "", "" },
+					{ "1.", "Appropriate documentation and Billing", String.valueOf(feedbackForm.getControls1()),
+							String.valueOf(feedbackForm.getControlsOutOf1()) },
+					{ "2.", "Attendance and other relevant documents submitted on time ",
+							String.valueOf(feedbackForm.getControls2()),
+							String.valueOf(feedbackForm.getControlsOutOf2()) },
+					{ "3.", "Regular trainings held (on site / off site)", String.valueOf(feedbackForm.getControls3()),
+							String.valueOf(feedbackForm.getControlsOutOf3()) },
+					{ "4", "Recommendation on preventive maintenance ", String.valueOf(feedbackForm.getControls4()),
+							String.valueOf(feedbackForm.getControlsOutOf4()) },
+					{ "5", "Timely receipt of materials", String.valueOf(feedbackForm.getControls5()),
+							String.valueOf(feedbackForm.getControlsOutOf5()) },
+					{ "", "Sub Total", String.valueOf(subtotal5), String.valueOf(outof5) }, { "", "", "", "" },
+					{ "F.", "HO and Team Managers", "", "" },
+					{ "1.", "Management team in regular contact", String.valueOf(feedbackForm.getHo1()),
+							String.valueOf(feedbackForm.getHoOutOf1()) },
+					{ "2.", "Supervision and Knowldege ", String.valueOf(feedbackForm.getHo2()),
+							String.valueOf(feedbackForm.getHoOutOf2()) },
+					{ "3.", "Responsiveness to Client's Needs", String.valueOf(feedbackForm.getHo3()),
+							String.valueOf(feedbackForm.getHoOutOf3()) },
+					{ "4.", "Recommendation on new technology", String.valueOf(feedbackForm.getHo4()),
+							String.valueOf(feedbackForm.getHoOutOf4()) },
+					{ "5.", "Provide timely documentation and information ", String.valueOf(feedbackForm.getHo5()),
+							String.valueOf(feedbackForm.getHoOutOf5()) },
+					{ "", "Sub Total", String.valueOf(subtotal6), String.valueOf(outof6) }, { "", "", "", "" },
+					{ "", "Total", String.valueOf(totalEarn), String.valueOf(totalOutOf) },
+					{ "", "Quick %", String.format("%.2f", percentage), "" } };
+
+			// Create data rows
+			for (String[] rowData : inspectionData) {
+				XSSFRow row = sheet.createRow(currentRow++);
+				for (int i = 0; i < rowData.length; i++) {
+					XSSFCell cell = row.createCell(i);
+					cell.setCellValue(rowData[i]);
+					cell.setCellStyle(borderCellStyle);
+				}
+			}
+
+			// Adjust column widths
+			for (int i = 0; i < headers.length; i++) {
+				sheet.autoSizeColumn(i);
+			}
+
+			// Write the workbook to a byte array output stream
+			try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+				workbook.write(outputStream);
+				return outputStream.toByteArray();
+			}
+		}
+		throw new RecordNotFoundException("Inspection Form not found with id: " + id);
+
+	}
+
+	// Method to create a border cell style
+	private XSSFCellStyle createBorderCellStyle(XSSFWorkbook workbook) {
+		XSSFCellStyle style = workbook.createCellStyle();
+		// Create a font and set it to bold
+		XSSFFont font = workbook.createFont();
+		font.setBold(true);
+		style.setFont(font);
+
+		style.setBorderTop(BorderStyle.THIN);
+		style.setBorderBottom(BorderStyle.THIN);
+		style.setBorderLeft(BorderStyle.THIN);
+		style.setBorderRight(BorderStyle.THIN);
+
+		return style;
+	}
+
+	// company name style
+	// Create a font object and set its size
+	private XSSFCellStyle createCompanyBorderCellStyle(XSSFWorkbook workbook) {
+		XSSFFont font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14); // Font size 14
+
+		// Create a cell style object
+		XSSFCellStyle style = workbook.createCellStyle();
+		style.setFont(font);
+		style.setAlignment(HorizontalAlignment.CENTER); // Center-align text
+		style.setVerticalAlignment(VerticalAlignment.CENTER); // Center-align text vertically
+		style.setBorderTop(BorderStyle.THIN);
+		style.setBorderBottom(BorderStyle.THIN);
+		style.setBorderLeft(BorderStyle.THIN);
+		style.setBorderRight(BorderStyle.THIN);
+		return style;
+	}
+
+	private XSSFCellStyle createHeaderCellStyle(XSSFWorkbook workbook) {
+
+		XSSFCellStyle style = workbook.createCellStyle();
+		style.setFillBackgroundColor(IndexedColors.YELLOW.getIndex());
+		// style.setFillForegroundColor(IndexedColors.YELLOW.getIndex()); // Set
+		// background color to yellow
+		style.setFillPattern(FillPatternType.SOLID_FOREGROUND); // Fill the cell with the foreground color
+		style.setAlignment(HorizontalAlignment.CENTER); // Center align the text
+		style.setVerticalAlignment(VerticalAlignment.CENTER); // Center align vertically
+		style.setBorderBottom(BorderStyle.THIN);
+		style.setBorderLeft(BorderStyle.THIN);
+		style.setBorderRight(BorderStyle.THIN);
+		style.setBorderTop(BorderStyle.THIN);
+
+		return style;
+	}
+
+	private static void createAndStyleCells(XSSFRow row, int startCol, int endCol, String value, XSSFCellStyle style) {
+		for (int i = startCol; i <= endCol; i++) {
+			XSSFCell cell = row.createCell(i);
+			cell.setCellValue(value);
+			cell.setCellStyle(style);
+		}
+	}
 
 }
