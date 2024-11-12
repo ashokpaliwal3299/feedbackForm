@@ -11,23 +11,19 @@ import com.feedback.form.repository.ClientSiteMasterRepository;
 
 @Service
 public class ClientSiteMasterService {
-	
-	@Autowired
-	private EmailService emailService;
 
 	@Autowired
 	private ClientSiteMasterRepository clientSiteRepo;
-	
+
 	public ClientSiteMaster addClientSiteMaster(ClientSiteMaster site) {
-		emailService.sendEmail("ashokpaliwal3299@gmail.com", "hi dumy test", "body body body");
 		return clientSiteRepo.save(site);
 	}
 
 	public Optional<ClientSiteMaster> getClientSiteMaster(Long id) {
 		return clientSiteRepo.findByIdAndIsDeletedFalse(id);
 	}
-	
-	public List<ClientSiteMaster> getAllClientSite(){
+
+	public List<ClientSiteMaster> getAllClientSite() {
 		return clientSiteRepo.findAllByIsDeletedFalse();
 	}
 }
