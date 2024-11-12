@@ -25,6 +25,7 @@ public class FeedbackForm {
 	private Long id;
 	private boolean isDeleted = false;
 	
+	
 	private Long siteId; 
 	
 	private int personal1;
