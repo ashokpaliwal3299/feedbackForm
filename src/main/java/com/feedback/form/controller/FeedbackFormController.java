@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.feedback.form.Dto.feedbackFormDto;
 import com.feedback.form.model.FeedbackForm;
 import com.feedback.form.service.FeedbackFormService;
 
@@ -37,6 +38,12 @@ public class FeedbackFormController {
 	@GetMapping("/")
 	public ResponseEntity<List<FeedbackForm>> allFeedback() {
 		List<FeedbackForm> allFeedback = feedbackFormService.allFeedbackForm();
+		return ResponseEntity.status(HttpStatus.OK).body(allFeedback);
+	}
+	
+	@GetMapping("/all-percenatage")
+	public ResponseEntity<List<feedbackFormDto>> allFeedbackPercentage() {
+		List<feedbackFormDto> allFeedback = feedbackFormService.allFeedbackFormPercentage();
 		return ResponseEntity.status(HttpStatus.OK).body(allFeedback);
 	}
 
