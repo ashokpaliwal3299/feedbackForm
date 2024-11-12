@@ -267,17 +267,17 @@ public class FeedbackFormService {
 	}
 
 	public List<feedbackFormDto> allFeedbackFormPercentage() {
-		// Fetch all feedback forms that are not marked as deleted
+		
 		List<FeedbackForm> forms = fedbackRepo.findAllByIsDeletedFalse();
 
-		// Initialize the list that will hold the DTOs
+		
 		List<feedbackFormDto> dtoList = new ArrayList<>();
 
 		for (FeedbackForm form : forms) {
-			// Initialize the DTO
+			
 			feedbackFormDto dto = new feedbackFormDto();
 
-			// Calculate subtotal and total for each section
+			
 			int subTotal1 = form.getPersonal1() + form.getPersonal2() + form.getPersonal3() + form.getPersonal4()
 					+ form.getPersonal5();
 			int outOfTotal1 = form.getPersonalOutOf1() + form.getPersonalOutOf2() + form.getPersonalOutOf3()
@@ -521,7 +521,7 @@ public class FeedbackFormService {
 			double percentage = ((double) totalEarn / totalOutOf) * 100;
 
 			int currentRow = 7;
-			String[][] inspectionData = { { "A", "Personal", "Points Earned", "Out of" },
+			String[][] inspectionData = { { "A", "Personal", "", "" },
 					{ "1", "Staff courtesy and presentation", String.valueOf(feedbackForm.getPersonal1()),
 							String.valueOf(feedbackForm.getPersonalOutOf1()) },
 					{ "2", "Staff Personnel Hygiene", String.valueOf(feedbackForm.getPersonal2()),
