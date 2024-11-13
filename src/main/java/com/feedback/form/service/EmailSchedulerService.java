@@ -3,7 +3,6 @@ package com.feedback.form.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +12,8 @@ import com.feedback.form.model.ClientSiteMaster;
 @Service
 public class EmailSchedulerService {
 	
-	static private final String url =  "http://localhost:5173/feedBackForm/2";
+	//private String url =  "https://www.google.co.in/";
+	static private  String url =  "http://localhost:5173/feedBackForm/";
 
 	@Autowired
 	private EmailService emailService;
@@ -25,14 +25,14 @@ public class EmailSchedulerService {
 		return siteService.getAllClientSite();
 	}
 	
-	@Scheduled(cron = "0 04 15 12 * ?")
+	@Scheduled(cron = "0 31 13 12 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = getAllSites();
 		
 		for (ClientSiteMaster site : formsToProcess) {
-			triggerEmails(site, url);
-		}
+			triggerEmails(site, url + site.getId());
+			}
 	}
 
 	private void triggerEmails(ClientSiteMaster site, String url) {

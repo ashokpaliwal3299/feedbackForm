@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.feedback.form.Dto.feedbackFormDto;
+import com.feedback.form.Exception.AlreadyExistsException;
 import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.Utils.ExcelUtils;
 import com.feedback.form.model.ClientSiteMaster;
@@ -45,6 +46,16 @@ public class FeedbackFormService {
 	private EmailService emailService;
 
 	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) throws IOException, MessagingException {
+		
+		if(siteId == 0 || siteId == null) {
+			throw new RecordNotFoundException("Site id should not 0 or null");
+		}
+		
+		Optional<FeedbackForm> optForm = fedbackRepo.findBySiteIdAndIsDeletedFalse(siteId);
+		if(optForm.isPresent()) {
+			throw new AlreadyExistsException("Feedback form for siteId : " + siteId + " already filled.");
+		}
+		
 		if (form.getCleaning1() == 0) {
 			form.setCleaningOutOf1(0);
 		} else {
@@ -267,17 +278,17 @@ public class FeedbackFormService {
 	}
 
 	public List<feedbackFormDto> allFeedbackFormPercentage() {
-		// Fetch all feedback forms that are not marked as deleted
+		
 		List<FeedbackForm> forms = fedbackRepo.findAllByIsDeletedFalse();
 
-		// Initialize the list that will hold the DTOs
+		
 		List<feedbackFormDto> dtoList = new ArrayList<>();
 
 		for (FeedbackForm form : forms) {
-			// Initialize the DTO
+			
 			feedbackFormDto dto = new feedbackFormDto();
 
-			// Calculate subtotal and total for each section
+			
 			int subTotal1 = form.getPersonal1() + form.getPersonal2() + form.getPersonal3() + form.getPersonal4()
 					+ form.getPersonal5();
 			int outOfTotal1 = form.getPersonalOutOf1() + form.getPersonalOutOf2() + form.getPersonalOutOf3()
@@ -321,17 +332,15 @@ public class FeedbackFormService {
 			Optional<ClientSiteMaster> optForm = siteRepo.findByIdAndIsDeletedFalse(form.getSiteId());
 			if (optForm.isPresent()) {
 				ClientSiteMaster siteMaster = optForm.get();
+				dto.setSiteId(siteMaster.getId());
 				dto.setClientName(siteMaster.getClientName());
 				dto.setInchargeName(siteMaster.getInchargeName());
 				dto.setPercentage(percentage); // Set the calculated percentage
 				dto.setSiteName(siteMaster.getSiteName());
 			}
 
-			// Add the populated DTO to the list
 			dtoList.add(dto);
 		}
-
-		// Return the list of populated DTOs
 		return dtoList;
 	}
 
@@ -489,7 +498,7 @@ public class FeedbackFormService {
 					+ feedbackForm.getCleaningOutOf5();
 
 			int subtotal3 = feedbackForm.getSupervision1() + feedbackForm.getSupervision2()
-					+ feedbackForm.getCleaning3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
+					+ feedbackForm.getSupervision3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
 
 			int outof3 = feedbackForm.getSupervisionOutOf1() + feedbackForm.getSupervisionOutOf2()
 					+ feedbackForm.getSupervisionOutOf3() + feedbackForm.getSupervisionOutOf4()
@@ -521,7 +530,7 @@ public class FeedbackFormService {
 			double percentage = ((double) totalEarn / totalOutOf) * 100;
 
 			int currentRow = 7;
-			String[][] inspectionData = { { "A", "Personal", "Points Earned", "Out of" },
+			String[][] inspectionData = { { "A", "Personal", "", "" },
 					{ "1", "Staff courtesy and presentation", String.valueOf(feedbackForm.getPersonal1()),
 							String.valueOf(feedbackForm.getPersonalOutOf1()) },
 					{ "2", "Staff Personnel Hygiene", String.valueOf(feedbackForm.getPersonal2()),
