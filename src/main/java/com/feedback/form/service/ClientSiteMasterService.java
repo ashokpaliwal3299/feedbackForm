@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.feedback.form.Exception.AlreadyExistsException;
 import com.feedback.form.model.ClientSiteMaster;
 import com.feedback.form.repository.ClientSiteMasterRepository;
 
@@ -16,6 +17,10 @@ public class ClientSiteMasterService {
 	private ClientSiteMasterRepository clientSiteRepo;
 	
 	public ClientSiteMaster addClientSiteMaster(ClientSiteMaster site) {
+		Optional<ClientSiteMaster> optSite = clientSiteRepo.findBySiteNameAndIsDeletedFalse(site.getSiteName());
+		if(optSite.isPresent()) {
+			throw new AlreadyExistsException("site name already exists.");
+		}
 		return clientSiteRepo.save(site);
 	}
 

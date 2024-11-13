@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.feedback.form.Dto.feedbackFormDto;
+import com.feedback.form.Exception.AlreadyExistsException;
 import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.Utils.ExcelUtils;
 import com.feedback.form.model.ClientSiteMaster;
@@ -45,6 +46,16 @@ public class FeedbackFormService {
 	private EmailService emailService;
 
 	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) throws IOException, MessagingException {
+		
+		if(siteId == 0 || siteId == null) {
+			throw new RecordNotFoundException("Site id should not 0 or null");
+		}
+		
+		Optional<FeedbackForm> optForm = fedbackRepo.findBySiteIdAndIsDeletedFalse(siteId);
+		if(optForm.isPresent()) {
+			throw new AlreadyExistsException("Feedback form for siteId : " + siteId + " already filled.");
+		}
+		
 		if (form.getCleaning1() == 0) {
 			form.setCleaningOutOf1(0);
 		} else {
@@ -328,11 +339,8 @@ public class FeedbackFormService {
 				dto.setSiteName(siteMaster.getSiteName());
 			}
 
-			// Add the populated DTO to the list
 			dtoList.add(dto);
 		}
-
-		// Return the list of populated DTOs
 		return dtoList;
 	}
 
@@ -490,7 +498,7 @@ public class FeedbackFormService {
 					+ feedbackForm.getCleaningOutOf5();
 
 			int subtotal3 = feedbackForm.getSupervision1() + feedbackForm.getSupervision2()
-					+ feedbackForm.getCleaning3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
+					+ feedbackForm.getSupervision3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
 
 			int outof3 = feedbackForm.getSupervisionOutOf1() + feedbackForm.getSupervisionOutOf2()
 					+ feedbackForm.getSupervisionOutOf3() + feedbackForm.getSupervisionOutOf4()

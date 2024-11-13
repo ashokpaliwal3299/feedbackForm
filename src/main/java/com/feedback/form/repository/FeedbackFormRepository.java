@@ -16,4 +16,6 @@ public interface FeedbackFormRepository extends JpaRepository<FeedbackForm, Long
 
 	List<FeedbackForm> findAllByIsDeletedFalse();
 
+	Optional<FeedbackForm> findBySiteIdAndIsDeletedFalse(Long siteId);
+
 }

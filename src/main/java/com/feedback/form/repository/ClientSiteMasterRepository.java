@@ -15,4 +15,6 @@ public interface ClientSiteMasterRepository extends JpaRepository<ClientSiteMast
 	
 	List<ClientSiteMaster> findAllByIsDeletedFalse();
 
+	Optional<ClientSiteMaster> findBySiteNameAndIsDeletedFalse(String siteName);
+
 }
