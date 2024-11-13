@@ -13,7 +13,7 @@ import com.feedback.form.model.ClientSiteMaster;
 @Service
 public class EmailSchedulerService {
 	
-	static private final String url =  "https://www.google.co.in/";
+	static private final String url =  "http://localhost:5173/feedBackForm/2";
 
 	@Autowired
 	private EmailService emailService;
@@ -25,7 +25,7 @@ public class EmailSchedulerService {
 		return siteService.getAllClientSite();
 	}
 	
-	@Scheduled(cron = "0 31 13 12 * ?")
+	@Scheduled(cron = "0 04 15 12 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = getAllSites();

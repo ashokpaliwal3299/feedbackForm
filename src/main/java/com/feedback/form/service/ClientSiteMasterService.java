@@ -19,7 +19,7 @@ public class ClientSiteMasterService {
 	private ClientSiteMasterRepository clientSiteRepo;
 	
 	public ClientSiteMaster addClientSiteMaster(ClientSiteMaster site) {
-		emailService.sendEmail("ashokpaliwal3299@gmail.com", "hi dumy test", "body body body");
+		
 		return clientSiteRepo.save(site);
 	}
 
