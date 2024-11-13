@@ -2,6 +2,7 @@ package com.feedback.form.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.feedback.form.Dto.feedbackFormDto;
 import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.Utils.ExcelUtils;
 import com.feedback.form.model.ClientSiteMaster;
@@ -38,7 +40,7 @@ public class FeedbackFormService {
 
 	@Autowired
 	private ClientSiteMasterRepository siteRepo;
-	
+
 	@Autowired
 	private EmailService emailService;
 
@@ -238,18 +240,17 @@ public class FeedbackFormService {
 		FeedbackForm savedForm = fedbackRepo.save(form);
 		System.out.println("form saved");
 		Optional<ClientSiteMaster> siteMaster = siteRepo.findByIdAndIsDeletedFalse(siteId);
-		System.out.println("is present "+ siteMaster.isPresent() + " id is " + siteId);
-		if(siteMaster.isPresent()) {
+		System.out.println("is present " + siteMaster.isPresent() + " id is " + siteId);
+		if (siteMaster.isPresent()) {
 			System.out.println("email present");
 			String inschargeEmail = siteMaster.get().getEmail();
 			System.out.println("email is = " + inschargeEmail);
-			
+
 			byte[] file = excelExportOfInspectionForm(savedForm.getId());
-			
+
 			emailService.sendReportToSiteIncharge(inschargeEmail, file);
 		}
-		
-		
+
 		return savedForm;
 	}
 
@@ -263,6 +264,76 @@ public class FeedbackFormService {
 
 	public List<FeedbackForm> allFeedbackForm() {
 		return fedbackRepo.findAllByIsDeletedFalse();
+	}
+
+	public List<feedbackFormDto> allFeedbackFormPercentage() {
+		// Fetch all feedback forms that are not marked as deleted
+		List<FeedbackForm> forms = fedbackRepo.findAllByIsDeletedFalse();
+
+		// Initialize the list that will hold the DTOs
+		List<feedbackFormDto> dtoList = new ArrayList<>();
+
+		for (FeedbackForm form : forms) {
+			// Initialize the DTO
+			feedbackFormDto dto = new feedbackFormDto();
+
+			// Calculate subtotal and total for each section
+			int subTotal1 = form.getPersonal1() + form.getPersonal2() + form.getPersonal3() + form.getPersonal4()
+					+ form.getPersonal5();
+			int outOfTotal1 = form.getPersonalOutOf1() + form.getPersonalOutOf2() + form.getPersonalOutOf3()
+					+ form.getPersonalOutOf4() + form.getPersonalOutOf5();
+
+			int subtotal2 = form.getCleaning1() + form.getCleaning2() + form.getCleaning3() + form.getCleaning4()
+					+ form.getCleaning5();
+			int outOf2 = form.getCleaningOutOf1() + form.getCleaningOutOf2() + form.getCleaningOutOf3()
+					+ form.getCleaningOutOf4() + form.getCleaningOutOf5();
+
+			int subtotal3 = form.getSupervision1() + form.getSupervision2() + form.getSupervision3()
+					+ form.getSupervision4() + form.getSupervision5();
+			int outof3 = form.getSupervisionOutOf1() + form.getSupervisionOutOf2() + form.getSupervisionOutOf3()
+					+ form.getSupervisionOutOf4() + form.getSupervisionOutOf5();
+
+			int subtotal4 = form.getPurchase1() + form.getPurchase2() + form.getPurchase3() + form.getPurchase4()
+					+ form.getPurchase5();
+			int outof4 = form.getPurchaseOutOf1() + form.getPurchaseOutOf2() + form.getPurchaseOutOf3()
+					+ form.getPurchaseOutOf4() + form.getPurchaseOutOf5();
+
+			int subtotal5 = form.getControls1() + form.getControls2() + form.getControls3() + form.getControls4()
+					+ form.getControls5();
+			int outof5 = form.getControlsOutOf1() + form.getControlsOutOf2() + form.getControlsOutOf3()
+					+ form.getControlsOutOf4() + form.getControlsOutOf5();
+
+			int subtotal6 = form.getHo1() + form.getHo2() + form.getHo3() + form.getHo4() + form.getHo5();
+			int outof6 = form.getHoOutOf1() + form.getHoOutOf2() + form.getHoOutOf3() + form.getHoOutOf4()
+					+ form.getHoOutOf5();
+
+			// Calculate total earned and total possible points
+			int totalEarn = subTotal1 + subtotal2 + subtotal3 + subtotal4 + subtotal5 + subtotal6;
+			int totalOutOf = outOfTotal1 + outOf2 + outof3 + outof4 + outof5 + outof6;
+
+			// Calculate percentage
+			double percentage = 0.0;
+			if (totalOutOf != 0) {
+				percentage = ((double) totalEarn / totalOutOf) * 100;
+			}
+
+			// Retrieve additional site information from ClientSiteMaster
+			Optional<ClientSiteMaster> optForm = siteRepo.findByIdAndIsDeletedFalse(form.getSiteId());
+			if (optForm.isPresent()) {
+				ClientSiteMaster siteMaster = optForm.get();
+				dto.setSiteId(siteMaster.getId());
+				dto.setClientName(siteMaster.getClientName());
+				dto.setInchargeName(siteMaster.getInchargeName());
+				dto.setPercentage(percentage); // Set the calculated percentage
+				dto.setSiteName(siteMaster.getSiteName());
+			}
+
+			// Add the populated DTO to the list
+			dtoList.add(dto);
+		}
+
+		// Return the list of populated DTOs
+		return dtoList;
 	}
 
 	public String deleteFeedBack(Long id) {
@@ -288,7 +359,7 @@ public class FeedbackFormService {
 	@Async
 	public byte[] excelExportOfInspectionForm(Long id) throws IOException {
 		System.out.println("report making");
-		
+
 		// Fetch the InspectionForm from the repository
 		Optional<FeedbackForm> optionalFeedbackForm = fedbackRepo.findByIdAndIsDeletedFalse(id);
 
@@ -419,7 +490,7 @@ public class FeedbackFormService {
 					+ feedbackForm.getCleaningOutOf5();
 
 			int subtotal3 = feedbackForm.getSupervision1() + feedbackForm.getSupervision2()
-					+ feedbackForm.getCleaning3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
+					+ feedbackForm.getSupervision3() + feedbackForm.getSupervision4() + feedbackForm.getSupervision5();
 
 			int outof3 = feedbackForm.getSupervisionOutOf1() + feedbackForm.getSupervisionOutOf2()
 					+ feedbackForm.getSupervisionOutOf3() + feedbackForm.getSupervisionOutOf4()
