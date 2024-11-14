@@ -61,6 +61,7 @@ public class FeedbackFormController {
 
 	@GetMapping("/excel/{id}")
 	public ResponseEntity<byte[]> generateExcel(@PathVariable Long id) throws IOException {
+		System.out.println("id :" + id);
 		byte[] excelData = feedbackFormService.excelExportOfInspectionForm(id);
 
 		HttpHeaders headers = new HttpHeaders();
