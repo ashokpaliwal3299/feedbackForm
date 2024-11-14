@@ -30,7 +30,8 @@ public class FeedbackFormController {
 	private FeedbackFormService feedbackFormService;
 
 	@PostMapping("/new/{siteId}")
-	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId) throws IOException, MessagingException {
+	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId)
+			throws IOException, MessagingException {
 		FeedbackForm newFeedback = feedbackFormService.addFeedbackForm(form, siteId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(newFeedback);
 	}
@@ -40,7 +41,7 @@ public class FeedbackFormController {
 		List<FeedbackForm> allFeedback = feedbackFormService.allFeedbackForm();
 		return ResponseEntity.status(HttpStatus.OK).body(allFeedback);
 	}
-	
+
 	@GetMapping("/all-percenatage")
 	public ResponseEntity<List<feedbackFormDto>> allFeedbackPercentage() {
 		List<feedbackFormDto> allFeedback = feedbackFormService.allFeedbackFormPercentage();
@@ -57,6 +58,12 @@ public class FeedbackFormController {
 	public ResponseEntity<String> deleteFeedback(@PathVariable Long id) {
 		String res = feedbackFormService.deleteFeedBack(id);
 		return ResponseEntity.status(HttpStatus.OK).body(res);
+	}
+
+	@GetMapping("/avg-percenatage/{siteId}/year/{year}")
+	public ResponseEntity<Double> avgPercentage(@PathVariable Long siteId, @PathVariable int year) {
+		double avgPercentaeg = feedbackFormService.allFeedbackFormOfSiteByYear(siteId, year);
+		return ResponseEntity.status(HttpStatus.OK).body(avgPercentaeg);
 	}
 
 	@GetMapping("/{id}/excel")

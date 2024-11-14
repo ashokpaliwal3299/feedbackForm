@@ -25,6 +25,8 @@ public class FeedbackForm {
 	private Long id;
 	private boolean isDeleted = false;
 	
+	private String month;
+	private int year;
 	
 	private Long siteId; 
 	
