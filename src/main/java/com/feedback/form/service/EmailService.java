@@ -21,22 +21,21 @@ public class EmailService {
 	@Autowired
 	private JavaMailSender javaMailSender;
 
-
 	@Value("$(spring.mail.username)")
 	private String from;
 
 	@Async
-	public void sendEmail(String to, String subject, String body){
-				
+	public void sendEmail(String to, String subject, String body) {
+
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(to);
 		message.setSubject(subject);
 		message.setText(body);
 		message.setFrom(from);
-		
+
 		javaMailSender.send(message);
 	}
-	
+
 	@Async
 	public void sendReportToSiteIncharge(String to, byte[] file) throws MessagingException, IOException {
 		MimeMessage message = javaMailSender.createMimeMessage();
@@ -44,18 +43,24 @@ public class EmailService {
 
 		helper.setTo(to);
 		helper.setSubject("Feedback form report.");
-		helper.setText("Dear %s, \n\n"
-				+ "Thank you for your time, please find attached feedback report.\n\n"
-				+ "If you have any questions or need further assistance, feel free to reach out to us.\r\n"
-				+ "\r\n" + "Thanks & Regards \n" + "Ismart Facitech Pvt. Ltd.");
+		helper.setText("Dear Sir, \n\n"
+				+ "We want to thank you for taking the time to provide us with your valuable feedback. Your insights are crucial to helping us improve our services.\n\n"
+				+ "We appreciate your honest feedback.\n\n" 
+				+ "Your satisfaction is our priority, and we are committed to providing you with the best possible service.\n\n"
+				+ "Thank you once again for your feedback.\n\n" 
+				+ "Sincerely,  \n" 
+				+ "Team Operations \n"
+				+ "iSmart Facitech Pvt Ltd \n\n"
+				+ "This is a system generated email and not manned. To communicate with us, kindly email on  _____________");
 
 		// Attach the file
 		if (file != null && file.length != 0) {
 			System.out.println("report having data");
-			String attachmentName = "FeedbackReport.xlsx"; 
-	        
-	        DataSource dataSource = new ByteArrayDataSource(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-	        helper.addAttachment(attachmentName, dataSource);
+			String attachmentName = "FeedbackReport.xlsx";
+
+			DataSource dataSource = new ByteArrayDataSource(file,
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+			helper.addAttachment(attachmentName, dataSource);
 		}
 		javaMailSender.send(message);
 		System.out.println("mail send");

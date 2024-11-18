@@ -22,4 +22,6 @@ public interface FeedbackFormRepository extends JpaRepository<FeedbackForm, Long
 	
 	Optional<FeedbackForm> findBySiteIdAndMonthAndYearAndIsDeletedFalse(Long siteId, String month, int year);
 
+	List<FeedbackForm> findAllByYearAndMonthAndIsDeletedFalse(Integer year, String month);
+
 }

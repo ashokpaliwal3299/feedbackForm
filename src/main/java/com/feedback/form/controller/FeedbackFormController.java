@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import com.feedback.form.Dto.ApiResponse;
 import com.feedback.form.Dto.feedbackFormDto;
 import com.feedback.form.model.FeedbackForm;
+import com.feedback.form.service.EmailSchedulerService;
 import com.feedback.form.service.FeedbackFormService;
 
 import jakarta.mail.MessagingException;
@@ -28,6 +29,9 @@ public class FeedbackFormController {
 
 	@Autowired
 	private FeedbackFormService feedbackFormService;
+	
+	@Autowired
+	private EmailSchedulerService emailSchedulerService;
 
 	@PostMapping("/new/{siteId}")
 	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId)
@@ -66,7 +70,7 @@ public class FeedbackFormController {
 		return ResponseEntity.status(HttpStatus.OK).body(avgPercentaeg);
 	}
 
-	@GetMapping("/{id}/excel")
+	@GetMapping("/excel/{id}")
 	public ResponseEntity<byte[]> generateExcel(@PathVariable Long id) throws IOException {
 		byte[] excelData = feedbackFormService.excelExportOfInspectionForm(id);
 

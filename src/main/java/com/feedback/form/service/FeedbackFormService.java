@@ -23,7 +23,6 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.feedback.form.Dto.feedbackFormDto;
@@ -258,8 +257,6 @@ public class FeedbackFormService {
 
 		form.setSiteId(siteId);
 
-		
-
 		form.setYear(year);
 		form.setMonth(month);
 		FeedbackForm savedForm = fedbackRepo.save(form);
@@ -288,6 +285,14 @@ public class FeedbackFormService {
 
 	public List<FeedbackForm> allFeedbackForm() {
 		return fedbackRepo.findAllByIsDeletedFalse();
+	}
+	
+	public List<FeedbackForm> siteWhoFilledFormInYearAndMonth(Integer year, String month){
+		return fedbackRepo.findAllByYearAndMonthAndIsDeletedFalse(year, month);
+	}
+	
+	public List<FeedbackForm> findAllFormOfSiteIdAndYear(Long siteId, Integer year){
+		return fedbackRepo.findAllBySiteIdAndYearAndIsDeletedFalse(siteId, year);
 	}
 
 	public double allFeedbackFormOfSiteByYear(Long siteId, int year) {
@@ -390,7 +395,6 @@ public class FeedbackFormService {
 	}
 
 	// EXCEL CODE ---------------------------->
-	@Async
 	public byte[] excelExportOfInspectionForm(Long id) throws IOException {
 		System.out.println("report making");
 
