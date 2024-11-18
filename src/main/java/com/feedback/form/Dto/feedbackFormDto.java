@@ -16,4 +16,6 @@ public class feedbackFormDto {
 	private String siteName;
 	private String inchargeName;
 	private double percentage;
+	private String month;
+	private int year;
 }

@@ -2,9 +2,13 @@ package com.feedback.form.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -19,7 +23,6 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.feedback.form.Dto.feedbackFormDto;
@@ -47,15 +50,21 @@ public class FeedbackFormService {
 
 	public FeedbackForm addFeedbackForm(FeedbackForm form, Long siteId) throws IOException, MessagingException {
 		
-		if(siteId == 0 || siteId == null) {
+		LocalDate currentDate = LocalDate.now();
+		int year = currentDate.getYear();
+
+		String month = currentDate.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+
+		if (siteId == 0 || siteId == null) {
 			throw new RecordNotFoundException("Site id should not 0 or null");
 		}
+
+		Optional<FeedbackForm> optForm = fedbackRepo.findBySiteIdAndMonthAndYearAndIsDeletedFalse(siteId, month, year);
 		
-		Optional<FeedbackForm> optForm = fedbackRepo.findBySiteIdAndIsDeletedFalse(siteId);
-		if(optForm.isPresent()) {
+		if (optForm.isPresent()) {
 			throw new AlreadyExistsException("Feedback form for siteId : " + siteId + " already filled.");
 		}
-		
+
 		if (form.getCleaning1() == 0) {
 			form.setCleaningOutOf1(0);
 		} else {
@@ -247,15 +256,16 @@ public class FeedbackFormService {
 		}
 
 		form.setSiteId(siteId);
-		System.out.println("form start ti saving");
+
+		form.setYear(year);
+		form.setMonth(month);
 		FeedbackForm savedForm = fedbackRepo.save(form);
-		System.out.println("form saved");
+
 		Optional<ClientSiteMaster> siteMaster = siteRepo.findByIdAndIsDeletedFalse(siteId);
-		System.out.println("is present " + siteMaster.isPresent() + " id is " + siteId);
+
 		if (siteMaster.isPresent()) {
-			System.out.println("email present");
+
 			String inschargeEmail = siteMaster.get().getEmail();
-			System.out.println("email is = " + inschargeEmail);
 
 			byte[] file = excelExportOfInspectionForm(savedForm.getId());
 
@@ -276,19 +286,38 @@ public class FeedbackFormService {
 	public List<FeedbackForm> allFeedbackForm() {
 		return fedbackRepo.findAllByIsDeletedFalse();
 	}
+	
+	public List<FeedbackForm> siteWhoFilledFormInYearAndMonth(Integer year, String month){
+		return fedbackRepo.findAllByYearAndMonthAndIsDeletedFalse(year, month);
+	}
+	
+	public List<FeedbackForm> findAllFormOfSiteIdAndYear(Long siteId, Integer year){
+		return fedbackRepo.findAllBySiteIdAndYearAndIsDeletedFalse(siteId, year);
+	}
+
+	public double allFeedbackFormOfSiteByYear(Long siteId, int year) {
+		List<feedbackFormDto> formList = allFeedbackFormPercentage();
+
+		List<feedbackFormDto> filteredList = formList.stream()
+				.filter(form -> form.getSiteId().equals(siteId) && form.getYear() == year).collect(Collectors.toList());
+
+		double totalPercentage = filteredList.stream().mapToDouble(feedbackFormDto::getPercentage).sum();
+
+		double averagePercentage = totalPercentage / filteredList.size();
+		
+		return averagePercentage;
+	}
 
 	public List<feedbackFormDto> allFeedbackFormPercentage() {
-		
+
 		List<FeedbackForm> forms = fedbackRepo.findAllByIsDeletedFalse();
 
-		
 		List<feedbackFormDto> dtoList = new ArrayList<>();
 
 		for (FeedbackForm form : forms) {
-			
+
 			feedbackFormDto dto = new feedbackFormDto();
 
-			
 			int subTotal1 = form.getPersonal1() + form.getPersonal2() + form.getPersonal3() + form.getPersonal4()
 					+ form.getPersonal5();
 			int outOfTotal1 = form.getPersonalOutOf1() + form.getPersonalOutOf2() + form.getPersonalOutOf3()
@@ -337,6 +366,8 @@ public class FeedbackFormService {
 				dto.setInchargeName(siteMaster.getInchargeName());
 				dto.setPercentage(percentage); // Set the calculated percentage
 				dto.setSiteName(siteMaster.getSiteName());
+				dto.setMonth(form.getMonth());
+				dto.setYear(form.getYear());
 			}
 
 			dtoList.add(dto);
@@ -364,7 +395,6 @@ public class FeedbackFormService {
 	}
 
 	// EXCEL CODE ---------------------------->
-	@Async
 	public byte[] excelExportOfInspectionForm(Long id) throws IOException {
 		System.out.println("report making");
 

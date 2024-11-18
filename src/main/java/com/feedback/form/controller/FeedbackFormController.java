@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import com.feedback.form.Dto.ApiResponse;
 import com.feedback.form.Dto.feedbackFormDto;
 import com.feedback.form.model.FeedbackForm;
+import com.feedback.form.service.EmailSchedulerService;
 import com.feedback.form.service.FeedbackFormService;
 
 import jakarta.mail.MessagingException;
@@ -28,9 +29,13 @@ public class FeedbackFormController {
 
 	@Autowired
 	private FeedbackFormService feedbackFormService;
+	
+	@Autowired
+	private EmailSchedulerService emailSchedulerService;
 
 	@PostMapping("/new/{siteId}")
-	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId) throws IOException, MessagingException {
+	public ResponseEntity<FeedbackForm> addFeedback(@RequestBody FeedbackForm form, @PathVariable Long siteId)
+			throws IOException, MessagingException {
 		FeedbackForm newFeedback = feedbackFormService.addFeedbackForm(form, siteId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(newFeedback);
 	}
@@ -40,7 +45,7 @@ public class FeedbackFormController {
 		List<FeedbackForm> allFeedback = feedbackFormService.allFeedbackForm();
 		return ResponseEntity.status(HttpStatus.OK).body(allFeedback);
 	}
-	
+
 	@GetMapping("/all-percenatage")
 	public ResponseEntity<List<feedbackFormDto>> allFeedbackPercentage() {
 		List<feedbackFormDto> allFeedback = feedbackFormService.allFeedbackFormPercentage();
@@ -59,7 +64,13 @@ public class FeedbackFormController {
 		return ResponseEntity.status(HttpStatus.OK).body(res);
 	}
 
-	@GetMapping("/{id}/excel")
+	@GetMapping("/avg-percenatage/{siteId}/year/{year}")
+	public ResponseEntity<Double> avgPercentage(@PathVariable Long siteId, @PathVariable int year) {
+		double avgPercentaeg = feedbackFormService.allFeedbackFormOfSiteByYear(siteId, year);
+		return ResponseEntity.status(HttpStatus.OK).body(avgPercentaeg);
+	}
+
+	@GetMapping("/excel/{id}")
 	public ResponseEntity<byte[]> generateExcel(@PathVariable Long id) throws IOException {
 		byte[] excelData = feedbackFormService.excelExportOfInspectionForm(id);
 
