@@ -25,7 +25,7 @@ import com.feedback.form.model.FeedbackForm;
 @Service
 public class EmailSchedulerService {
 
-	private String url = "https://www.google.co.in/"; // update link as form host
+	private String url = "http://smartfm.ismartfacitechpl.com/feedBackForm/"; 
 
 	@Autowired
 	private EmailService emailService;
@@ -37,7 +37,7 @@ public class EmailSchedulerService {
 	private FeedbackFormService formService;
 
 	// auto mail procces to all sites in our Local system
-	@Scheduled(cron = "0 27 10 18 * ?")
+	@Scheduled(cron = "0 00 17 18 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = siteService.getAllClientSite();
@@ -82,7 +82,7 @@ public class EmailSchedulerService {
 		return remainingSites;
 	}
 
-	@Scheduled(cron = "0 28 10 18 * ?")
+	@Scheduled(cron = "0 00 10 20 * ?")
 	public void checkRemainSiteAndReminder() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> remainSites = remainigClientSites();
@@ -109,8 +109,8 @@ public class EmailSchedulerService {
 
 	// ******* close auto mail remaining sites ***********************************
 
-	@Autowired
-	private RestTemplate restTemplate;
+//	@Autowired
+//	private RestTemplate restTemplate;
 //
 //	private static final String THIRD_PARTY_API_URL = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
 //
@@ -177,19 +177,19 @@ public class EmailSchedulerService {
 //			}
 //		}
 	
-	 public String getClients() {
-	        String url = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
-
-	        String jsonPayload = "{\"action\": \"all_sites\"}";
-
-	        HttpHeaders headers = new HttpHeaders();
-	        headers.setContentType(MediaType.APPLICATION_JSON);
-
-	        HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
-
-	        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-	        System.out.println("response is : " + response);
-	        return response.getBody();
-	    }
+//	 public String getClients() {
+//	        String url = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
+//
+//	        String jsonPayload = "{\"action\": \"all_sites\"}";
+//
+//	        HttpHeaders headers = new HttpHeaders();
+//	        headers.setContentType(MediaType.APPLICATION_JSON);
+//
+//	        HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
+//
+//	        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+//	        System.out.println("response is : " + response);
+//	        return response.getBody();
+//	    }
 
 }

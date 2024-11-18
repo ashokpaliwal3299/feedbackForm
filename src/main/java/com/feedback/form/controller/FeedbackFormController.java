@@ -80,10 +80,4 @@ public class FeedbackFormController {
 
 		return new ResponseEntity<>(excelData, headers, HttpStatus.OK);
 	}
-	
-	@GetMapping("/get-clients")
-    public String getClients() {
-        return emailSchedulerService.getClients();
-    }
-	
 }
