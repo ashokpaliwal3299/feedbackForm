@@ -25,7 +25,7 @@ import com.feedback.form.model.FeedbackForm;
 @Service
 public class EmailSchedulerService {
 
-	private String url = "http://smartfm.ismartfacitechpl.com/feedBackForm/"; 
+	private String url = "https://feed-back-form-f0y0nqj7c-yashhadades-projects.vercel.app/feedBackForm/"; 
 
 	@Autowired
 	private EmailService emailService;
