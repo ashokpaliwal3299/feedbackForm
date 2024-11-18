@@ -11,6 +11,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -108,8 +109,8 @@ public class EmailSchedulerService {
 
 	// ******* close auto mail remaining sites ***********************************
 
-//	@Autowired
-//	private RestTemplate restTemplate;
+	@Autowired
+	private RestTemplate restTemplate;
 //
 //	private static final String THIRD_PARTY_API_URL = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
 //
@@ -175,5 +176,20 @@ public class EmailSchedulerService {
 //				emailService.sendEmail(to, subject, body);
 //			}
 //		}
+	
+	 public String getClients() {
+	        String url = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
+
+	        String jsonPayload = "{\"action\": \"all_sites\"}";
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
+
+	        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+	        System.out.println("response is : " + response);
+	        return response.getBody();
+	    }
 
 }
