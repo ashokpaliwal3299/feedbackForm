@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
@@ -18,16 +20,22 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class ClientMaster {
+public class SiteMaster {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	private boolean isDeleted = false;
+	private boolean is_active = false;
 	
-	private String name;
+	@ManyToOne
+	@JoinColumn(name = "client_master_id")
+	private ClientMaster clientMaster;
+	
+	private String location_name;
+	private String location_code;
 	private String client_group_code;
-	private Long client_master_id;
+	private String branch_code;
+	private String siteInchargeEmail;
 	
 	
 	private LocalDateTime created_at;

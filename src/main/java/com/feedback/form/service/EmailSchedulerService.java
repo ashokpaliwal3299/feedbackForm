@@ -1,6 +1,8 @@
 package com.feedback.form.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
@@ -19,8 +21,10 @@ import org.springframework.web.client.RestTemplate;
 
 import com.feedback.form.Dto.ApiRequest;
 import com.feedback.form.Dto.ApiResponse;
+import com.feedback.form.model.ClientMaster;
 import com.feedback.form.model.ClientSiteMaster;
 import com.feedback.form.model.FeedbackForm;
+import com.feedback.form.repository.ClientMasterRepository;
 
 @Service
 public class EmailSchedulerService {
@@ -37,7 +41,7 @@ public class EmailSchedulerService {
 	private FeedbackFormService formService;
 
 	// auto mail procces to all sites in our Local system
-	@Scheduled(cron = "0 00 11 19 * ?")
+	@Scheduled(cron = "0 00 15 19 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = siteService.getAllClientSite();
@@ -82,7 +86,7 @@ public class EmailSchedulerService {
 		return remainingSites;
 	}
 
-	@Scheduled(cron = "0 00 10 20 * ?")
+	@Scheduled(cron = "0 00 18 19 * ?")
 	public void checkRemainSiteAndReminder() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> remainSites = remainigClientSites();
@@ -111,6 +115,9 @@ public class EmailSchedulerService {
 
 //	@Autowired
 //	private RestTemplate restTemplate;
+//	
+//	@Autowired
+//	private ClientMasterRepository clientRepo;
 //
 //	private static final String THIRD_PARTY_API_URL = "https://smartfm.ismartfacitechpl.com/smart_to_maxus_api.php";
 //
@@ -148,6 +155,7 @@ public class EmailSchedulerService {
 //				}
 //			});
 //		}
+//		
 //		return apiResponseList;
 //	}
 

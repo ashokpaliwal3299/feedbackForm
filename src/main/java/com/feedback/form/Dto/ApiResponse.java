@@ -1,5 +1,7 @@
 package com.feedback.form.Dto;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +16,9 @@ public class ApiResponse {
 	private Long id;
 	private String name;
 	private String client_group_code;
-	private Long client_master_id;
+	private String client_master_id;
+	private String created_at;
+	private String modified_at;
 	private String email;
 	
 }
