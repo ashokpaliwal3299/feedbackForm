@@ -86,15 +86,15 @@ public class EmailSchedulerService {
 		return remainingSites;
 	}
 
-	//@Scheduled(cron = "0 00 18 19 * ?")
-//	public void checkRemainSiteAndReminder() {
-//		System.out.println("scheduler runing...");
-//		List<ClientSiteMaster> remainSites = remainigClientSites();
-//
-//		for (ClientSiteMaster site : remainSites) {
-//			triggerRemainderEmails(site, url + site.getId());
-//		}
-//	}
+	@Scheduled(cron = "0 00 18 19 * ?")
+	public void checkRemainSiteAndReminder() {
+		System.out.println("scheduler runing...");
+		List<ClientSiteMaster> remainSites = remainigClientSites();
+
+		for (ClientSiteMaster site : remainSites) {
+			triggerRemainderEmails(site, url + site.getId());
+		}
+	}
 
 	private void triggerRemainderEmails(ClientSiteMaster site, String url) {
 		if (site != null && site.getEmail() != null) {
