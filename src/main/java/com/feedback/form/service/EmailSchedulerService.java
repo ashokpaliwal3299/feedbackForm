@@ -25,7 +25,7 @@ import com.feedback.form.model.FeedbackForm;
 @Service
 public class EmailSchedulerService {
 
-	private String url = "https://feed-back-form-f0y0nqj7c-yashhadades-projects.vercel.app/feedBackForm/"; 
+	private String url = "https://feed-back-form-nine.vercel.app/feedBackForm/"; 
 
 	@Autowired
 	private EmailService emailService;
@@ -37,7 +37,7 @@ public class EmailSchedulerService {
 	private FeedbackFormService formService;
 
 	// auto mail procces to all sites in our Local system
-	@Scheduled(cron = "0 00 17 18 * ?")
+	@Scheduled(cron = "0 00 11 19 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = siteService.getAllClientSite();
