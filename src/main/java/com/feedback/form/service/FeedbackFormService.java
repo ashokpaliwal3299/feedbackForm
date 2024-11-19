@@ -361,7 +361,7 @@ public class FeedbackFormService {
 			Optional<ClientSiteMaster> optForm = siteRepo.findByIdAndIsDeletedFalse(form.getSiteId());
 			if (optForm.isPresent()) {
 				ClientSiteMaster siteMaster = optForm.get();
-				dto.setSiteId(siteMaster.getId());
+				dto.setSiteId(form.getId());
 				dto.setClientName(siteMaster.getClientName());
 				dto.setInchargeName(siteMaster.getInchargeName());
 				dto.setPercentage(percentage); // Set the calculated percentage
