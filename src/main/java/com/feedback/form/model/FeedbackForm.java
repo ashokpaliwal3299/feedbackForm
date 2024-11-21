@@ -133,5 +133,4 @@ public class FeedbackForm {
 	protected void onUpdate() {
 		updatedAt = LocalDateTime.now();
 	}
-	
 }

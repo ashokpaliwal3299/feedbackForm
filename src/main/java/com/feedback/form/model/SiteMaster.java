@@ -25,7 +25,7 @@ public class SiteMaster {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	private boolean is_active = false;
+	private boolean isDeleted = false;
 	
 	@ManyToOne
 	@JoinColumn(name = "client_master_id")
@@ -36,6 +36,7 @@ public class SiteMaster {
 	private String client_group_code;
 	private String branch_code;
 	private String siteInchargeEmail;
+	private String siteInchargeName;
 	
 	
 	private LocalDateTime created_at;

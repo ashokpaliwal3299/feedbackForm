@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class feedbackFormDto {
 	
+	private Long formId;
 	private Long siteId;
 	private String clientName;
 	private String siteName;

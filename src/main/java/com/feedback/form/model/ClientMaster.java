@@ -29,7 +29,6 @@ public class ClientMaster {
 	private String client_group_code;
 	private Long client_master_id;
 	
-	
 	private LocalDateTime created_at;
 	private LocalDateTime modified_at;
 	

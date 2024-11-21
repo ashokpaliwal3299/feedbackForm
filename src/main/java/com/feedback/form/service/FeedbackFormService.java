@@ -29,10 +29,10 @@ import com.feedback.form.Dto.feedbackFormDto;
 import com.feedback.form.Exception.AlreadyExistsException;
 import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.Utils.ExcelUtils;
-import com.feedback.form.model.ClientSiteMaster;
 import com.feedback.form.model.FeedbackForm;
-import com.feedback.form.repository.ClientSiteMasterRepository;
+import com.feedback.form.model.SiteMaster;
 import com.feedback.form.repository.FeedbackFormRepository;
+import com.feedback.form.repository.SiteMasterRepository;
 
 import jakarta.mail.MessagingException;
 
@@ -43,7 +43,7 @@ public class FeedbackFormService {
 	private FeedbackFormRepository fedbackRepo;
 
 	@Autowired
-	private ClientSiteMasterRepository siteRepo;
+	private SiteMasterRepository siteRepo;
 
 	@Autowired
 	private EmailService emailService;
@@ -261,11 +261,11 @@ public class FeedbackFormService {
 		form.setMonth(month);
 		FeedbackForm savedForm = fedbackRepo.save(form);
 
-		Optional<ClientSiteMaster> siteMaster = siteRepo.findByIdAndIsDeletedFalse(siteId);
+		Optional<SiteMaster> siteMaster = siteRepo.findByIdAndIsDeletedFalse(siteId);
 
-		if (siteMaster.isPresent()) {
+		if (siteMaster.isPresent() && siteMaster.get().getSiteInchargeEmail() != null) {
 
-			String inschargeEmail = siteMaster.get().getEmail();
+			String inschargeEmail = siteMaster.get().getSiteInchargeEmail();
 
 			byte[] file = excelExportOfInspectionForm(savedForm.getId());
 
@@ -358,14 +358,15 @@ public class FeedbackFormService {
 			}
 
 			// Retrieve additional site information from ClientSiteMaster
-			Optional<ClientSiteMaster> optForm = siteRepo.findByIdAndIsDeletedFalse(form.getSiteId());
+			Optional<SiteMaster> optForm = siteRepo.findByIdAndIsDeletedFalse(form.getSiteId());
 			if (optForm.isPresent()) {
-				ClientSiteMaster siteMaster = optForm.get();
-				dto.setSiteId(form.getId());
-				dto.setClientName(siteMaster.getClientName());
-				dto.setInchargeName(siteMaster.getInchargeName());
+				SiteMaster siteMaster = optForm.get();
+				dto.setFormId(form.getId());			
+				dto.setSiteId(siteMaster.getId());
+				dto.setClientName(siteMaster.getClientMaster().getName());
+				dto.setInchargeName(siteMaster.getSiteInchargeName());
 				dto.setPercentage(percentage); // Set the calculated percentage
-				dto.setSiteName(siteMaster.getSiteName());
+				dto.setSiteName(siteMaster.getLocation_name());
 				dto.setMonth(form.getMonth());
 				dto.setYear(form.getYear());
 			}
@@ -404,13 +405,13 @@ public class FeedbackFormService {
 		if (optionalFeedbackForm.isPresent()) {
 			FeedbackForm feedbackForm = optionalFeedbackForm.get();
 
-			Optional<ClientSiteMaster> optionalSite = siteRepo.findByIdAndIsDeletedFalse(feedbackForm.getSiteId());
+			Optional<SiteMaster> optionalSite = siteRepo.findByIdAndIsDeletedFalse(feedbackForm.getSiteId());
 
 			if (!optionalSite.isPresent()) {
 				throw new RecordNotFoundException("Site with id : " + feedbackForm.getSiteId() + " not found.");
 			}
 
-			ClientSiteMaster siteMaster = optionalSite.get();
+			SiteMaster siteMaster = optionalSite.get();
 
 			XSSFWorkbook workbook = new XSSFWorkbook();
 			XSSFSheet sheet = workbook.createSheet("Feedback Form");
@@ -444,7 +445,7 @@ public class FeedbackFormService {
 			brandCell.setCellStyle(style);
 
 			XSSFCell clientValueCell = storeNameRow.createCell(1);
-			clientValueCell.setCellValue(siteMaster.getClientName()); // Replace with actual client name value
+			clientValueCell.setCellValue(siteMaster.getClientMaster().getName()); // Replace with actual client name value
 			clientValueCell.setCellStyle(style);
 
 			// Apply borders from column 2 to the last column of this row
@@ -458,7 +459,7 @@ public class FeedbackFormService {
 			siteLabelCell.setCellStyle(style);
 
 			XSSFCell siteValueCell = siteNameRow.createCell(1);
-			siteValueCell.setCellValue(siteMaster.getSiteName()); // Replace with actual site name
+			siteValueCell.setCellValue(siteMaster.getLocation_name());
 			siteValueCell.setCellStyle(style);
 
 			// Apply borders from column 2 to the last column of this row
@@ -472,7 +473,7 @@ public class FeedbackFormService {
 			inchargeLabelCell.setCellStyle(style);
 
 			XSSFCell inchargeValueCell = inchargeNameRow.createCell(1);
-			inchargeValueCell.setCellValue(siteMaster.getInchargeName()); // Replace with actual in-charge name
+			inchargeValueCell.setCellValue(siteMaster.getSiteInchargeName()); 
 			inchargeValueCell.setCellStyle(style);
 
 			// Apply borders from column 2 to the last column of this row
@@ -486,9 +487,7 @@ public class FeedbackFormService {
 			dateTimeLabelCell.setCellStyle(style);
 
 			XSSFCell dateTimeValueCell = dateTimeRow.createCell(1);
-			dateTimeValueCell.setCellValue(ExcelUtils.formatTimeStamp(feedbackForm.getCreatedAt())); // Replace with
-																										// actual filled
-																										// date and time
+			dateTimeValueCell.setCellValue(ExcelUtils.formatTimeStamp(feedbackForm.getCreatedAt())); 
 			dateTimeValueCell.setCellStyle(style);
 
 			// Apply borders from column 2 to the last column of this row

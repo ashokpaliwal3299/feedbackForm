@@ -21,7 +21,7 @@ public class EmailService {
 	@Autowired
 	private JavaMailSender javaMailSender;
 
-	@Value("$(spring.mail.username)")
+	@Value("${spring.mail.username}")
 	private String from;
 
 	@Async
@@ -64,5 +64,33 @@ public class EmailService {
 		}
 		javaMailSender.send(message);
 		System.out.println("mail send");
+	}
+
+	@Async
+	public void sendReportToAdmin(String to, byte[] file) throws MessagingException {
+		MimeMessage message = javaMailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+		helper.setTo(to);
+		helper.setSubject("Site Report - Pending Feedback Forms");
+		helper.setText("Dear Sir/Madam, \n\n"
+				+ "Hope this message finds you well.\n" 
+				+ "Please find attached the report listing the sites that have not yet submitted their feedback forms. \n"
+				+ "Kindly review the document at your earliest convenience. \n\n"
+				+ "Sincerely,  \n" 
+				+ "Team Operations \n"
+				+ "iSmart Facitech Pvt Ltd \n\n"
+				+ "This is a system generated email and not manned. To communicate with us, kindly email on  _____________");
+
+		// Attach the file
+		if (file != null && file.length != 0) {
+			System.out.println("report having data");
+			String attachmentName = "SiteReport.xlsx";
+
+			DataSource dataSource = new ByteArrayDataSource(file,
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+			helper.addAttachment(attachmentName, dataSource);
+		}
+		javaMailSender.send(message);
 	}
 }

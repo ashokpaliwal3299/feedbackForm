@@ -1,30 +1,15 @@
 package com.feedback.form.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import com.feedback.form.Dto.ApiRequest;
-import com.feedback.form.Dto.ApiResponse;
-import com.feedback.form.model.ClientMaster;
 import com.feedback.form.model.ClientSiteMaster;
 import com.feedback.form.model.FeedbackForm;
-import com.feedback.form.repository.ClientMasterRepository;
 
 @Service
 public class EmailSchedulerService {
@@ -41,7 +26,7 @@ public class EmailSchedulerService {
 	private FeedbackFormService formService;
 
 	// auto mail procces to all sites in our Local system
-	@Scheduled(cron = "0 10 15 19 * ?")
+	//@Scheduled(cron = "0 10 15 19 * ?")
 	public void checkAndProcessForms() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> formsToProcess = siteService.getAllClientSite();
@@ -86,7 +71,7 @@ public class EmailSchedulerService {
 		return remainingSites;
 	}
 
-	@Scheduled(cron = "0 00 18 19 * ?")
+	//@Scheduled(cron = "0 03 18 19 * ?")
 	public void checkRemainSiteAndReminder() {
 		System.out.println("scheduler runing...");
 		List<ClientSiteMaster> remainSites = remainigClientSites();
