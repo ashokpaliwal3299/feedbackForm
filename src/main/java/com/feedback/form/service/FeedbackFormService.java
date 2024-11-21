@@ -638,7 +638,9 @@ public class FeedbackFormService {
 							String.valueOf(feedbackForm.getHoOutOf5()) },
 					{ "", "Sub Total", String.valueOf(subtotal6), String.valueOf(outof6) }, { "", "", "", "" },
 					{ "", "Total", String.valueOf(totalEarn), String.valueOf(totalOutOf) },
-					{ "", "Quick %", String.format("%.2f", percentage), "" } };
+					{ "", "Quick %", String.format("%.2f", percentage), "" },
+					{ "", "", "", "" },
+					{ "Remarks", feedbackForm.getRemarks() == null ? "" : feedbackForm.getRemarks(), "", "" },};
 
 			// Create data rows
 			for (String[] rowData : inspectionData) {

@@ -38,7 +38,6 @@ public class SiteMaster {
 	private String siteInchargeEmail;
 	private String siteInchargeName;
 	
-	
 	private LocalDateTime created_at;
 	private LocalDateTime modified_at;
 	

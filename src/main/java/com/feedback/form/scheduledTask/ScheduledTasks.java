@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -21,9 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.feedback.form.Exception.NullValueException;
+import com.feedback.form.Exception.RecordNotFoundException;
 import com.feedback.form.Utils.ExcelUtils;
 import com.feedback.form.model.FeedbackForm;
 import com.feedback.form.model.SiteMaster;
+import com.feedback.form.model.Url;
 import com.feedback.form.repository.UrlRepository;
 import com.feedback.form.service.EmailService;
 import com.feedback.form.service.FeedbackFormService;
@@ -48,29 +52,35 @@ public class ScheduledTasks {
 
 //	private String url = "https://feed-back-form-nine.vercel.app/feedBackForm/";
 	
-	private String url = "";
-	
 	public String getUrl() {
-		url = urlRepo.findById(1L).get().getUrlLink();
-		return url;
+		Optional<Url> optionalUrl = urlRepo.findById(1L);
+		
+		if(!optionalUrl.isPresent()) {
+			throw new RecordNotFoundException("Record not present in database with id : 1");
+		}
+		Url url = optionalUrl.get();
+		
+		if(url.getUrlLink() == null || url.getUrlLink().trim().length() == 0) {
+			throw new NullValueException("url value is null.");
+		}
+		return url.getUrlLink();
 	}
 
 	// *************** Initial Mail trigger *****
 
-	@Scheduled(cron = "0 10 15 19 * ?", zone = "Asia/Kolkata")
+	@Scheduled(cron = "0 0 10 25 * ?", zone = "Asia/Kolkata")
 	public void checkAndProcessForms() {
-		System.out.println("scheduler runing...");
 		List<SiteMaster> formsToProcess = siteService.getAllSiteMaster();
 
 		for (SiteMaster site : formsToProcess) {
-			triggerEmails(site, url + site.getId());
+			triggerEmails(site, getUrl() + site.getId());
 		}
 	}
 
 	private void triggerEmails(SiteMaster site, String url) {
 		if (site != null && site.getSiteInchargeEmail() != null) {
 			String to = site.getSiteInchargeEmail();
-			System.out.println("to " + to);
+
 			String subject = "Your Feedback Matters - Share Your Experience";
 			String body = "Dear Sir, \n\n" + "We hope this email finds you well.\n\n"
 					+ "At iSmart Facitech Pvt Ltd, we strive to provide exceptional Facilities Management services. Your feedback is invaluable to us as it helps us identify areas for improvement and continue delivering the highest quality service.\n\n"
@@ -102,13 +112,13 @@ public class ScheduledTasks {
 		return remainingSites;
 	}
 
-	@Scheduled(cron = "0 0 11 19 * ?", zone = "Asia/Kolkata")
+	@Scheduled(cron = "0 0 10 28 * ?", zone = "Asia/Kolkata")
 	public void processRemainderMail() {
 
 		List<SiteMaster> remainingSiteList = remainigSites();
 
 		for (SiteMaster site : remainingSiteList) {
-			triggerRemainderEmails(site, url + site.getId());
+			triggerRemainderEmails(site, getUrl() + site.getId());
 		}
 	}
 
@@ -128,14 +138,14 @@ public class ScheduledTasks {
 
 	// ***** Remaining site report ******
 
-//	@Scheduled(cron = "0 31 23 19 * ?", zone = "Asia/Kolkata")
+	@Scheduled(cron = "0 30 16 29 * ?", zone = "Asia/Kolkata")
 	public void remainingSitesExcelReportMail() throws IOException, MessagingException {
 
 		List<SiteMaster> remainingSiteList = remainigSites();
 
 		if(remainingSiteList != null && remainingSiteList.size() != 0) {
 			byte[] report = writeToExcel(remainingSiteList);
-			emailService.sendReportToAdmin("ashok.k@ismartFacitech.com", report);
+			emailService.sendReportToAdmin("rajesh.m1@ismartfacitech.com", report);
 		}
 	}
 

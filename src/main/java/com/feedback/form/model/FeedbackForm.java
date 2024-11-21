@@ -119,6 +119,7 @@ public class FeedbackForm {
 	
 	private int ho5;
 	private int hoOutOf5;
+	private String remarks;
 	
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;

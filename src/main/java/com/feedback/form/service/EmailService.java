@@ -84,7 +84,6 @@ public class EmailService {
 
 		// Attach the file
 		if (file != null && file.length != 0) {
-			System.out.println("report having data");
 			String attachmentName = "SiteReport.xlsx";
 
 			DataSource dataSource = new ByteArrayDataSource(file,
